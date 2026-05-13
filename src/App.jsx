@@ -1234,9 +1234,196 @@ function Scoreboard({ question, round, players, votes, skipped, onNext, onHome }
   );
 }
 
+// ============ TELA: BARALHO ESGOTADO ============
+function DeckEmpty({ deck, onBuy, onHome }) {
+  const [showBuySheet, setShowBuySheet] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
+  const [couponError, setCouponError] = useState('');
+  const [couponSuccess, setCouponSuccess] = useState(false);
+
+  const VALID_COUPONS = ['PROIBIDAO2024', 'AMIGO', 'BETA'];
+
+  const redeemCoupon = () => {
+    const code = couponInput.trim().toUpperCase();
+    if (VALID_COUPONS.includes(code)) {
+      setCouponSuccess(true);
+      setCouponError('');
+      setTimeout(() => { setShowBuySheet(false); onBuy(); }, 1200);
+    } else {
+      setCouponError('Cupom inválido ou já utilizado.');
+    }
+  };
+
+  const premiumCount = deck.totalCount - deck.freeCount;
+
+  return (
+    <AppShell
+      onHome={onHome}
+      cta={
+        <Btn onClick={onHome} color={C.inkSoft} border={C.border}>
+          Voltar ao início
+        </Btn>
+      }
+    >
+      <div style={{
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        textAlign: 'center', paddingTop: '1.5rem'
+      }}>
+        {/* ícone */}
+        <div style={{
+          width: '60px', height: '60px', borderRadius: '16px',
+          background: C.card, border: `1.5px solid ${C.border}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '1.8rem', marginBottom: '1.2rem'
+        }}>
+          🃏
+        </div>
+
+        <div style={{
+          fontFamily: TITLE, fontWeight: 900, fontSize: '1.5rem',
+          color: C.ink, letterSpacing: '-0.03em', lineHeight: 1.1,
+          marginBottom: '0.7rem'
+        }}>
+          Acabaram as cartas grátis!
+        </div>
+
+        <div style={{
+          fontFamily: BODY, fontSize: '0.82rem', color: C.inkMuted,
+          lineHeight: 1.55, marginBottom: '1.8rem', maxWidth: '280px'
+        }}>
+          Vocês jogaram todas as {deck.freeCount} cartas gratuitas. Desbloqueie as {premiumCount} cartas restantes para continuar.
+        </div>
+
+        {/* card de compra igual à home */}
+        <div style={{
+          width: '100%', background: '#111', border: `2px solid ${C.green}`,
+          borderRadius: `${R - 4}px`, padding: '1rem'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.8rem' }}>
+            <div>
+              <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1rem', color: C.ink, letterSpacing: '-0.02em' }}>
+                {deck.name}
+              </div>
+              <div style={{ fontFamily: BODY, fontSize: '0.65rem', color: C.inkMuted, marginTop: '0.15rem' }}>
+                {premiumCount} cartas premium restantes
+              </div>
+            </div>
+            <div style={{
+              background: `${C.green}22`, border: `1px solid ${C.green}55`,
+              borderRadius: '100px', padding: '0.2rem 0.6rem',
+              fontFamily: BODY, fontSize: '0.58rem', color: C.green, fontWeight: 700
+            }}>
+              +18
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowBuySheet(true)}
+            style={{
+              width: '100%', background: C.green, border: 'none',
+              borderRadius: '9px', padding: '0.75rem 1rem',
+              cursor: 'pointer', textAlign: 'center'
+            }}
+          >
+            <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '0.95rem', color: '#000', letterSpacing: '-0.01em' }}>
+              Baralho completo
+            </div>
+            <div style={{ fontFamily: BODY, fontSize: '0.65rem', color: '#1a3d00', marginTop: '0.1rem', fontWeight: 500 }}>
+              {deck.totalCount} cartas por {deck.price}
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Bottom sheet de compra */}
+      {showBuySheet && (
+        <div
+          onClick={() => { setShowBuySheet(false); setCouponError(''); setCouponInput(''); }}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+            zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center'
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#0c0c0c', borderRadius: `${R}px ${R}px 0 0`,
+              border: `1.5px solid ${C.border}`, borderBottom: 'none',
+              padding: '1.5rem', width: '100%', maxWidth: '480px'
+            }}
+          >
+            <div style={{ width: '2rem', height: '3px', background: '#333', borderRadius: '2px', margin: '0 auto 1.2rem' }} />
+
+            <div style={{ textAlign: 'center', marginBottom: '1.2rem' }}>
+              <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1.3rem', color: C.ink, letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
+                {deck.name}
+              </div>
+              <div style={{ fontFamily: BODY, fontSize: '0.75rem', color: C.inkMuted }}>
+                baralho completo · {deck.totalCount} cartas
+              </div>
+            </div>
+
+            <div style={{ background: '#111', border: `1px solid ${C.border}`, borderRadius: `${R - 6}px`, padding: '0.9rem 1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.inkSoft }}>{deck.freeCount} cartas grátis</div>
+                <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.green, fontWeight: 700 }}>incluso</div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
+                <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.inkSoft }}>{premiumCount} cartas premium</div>
+                <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.ink, fontWeight: 700 }}>desbloqueadas</div>
+              </div>
+              <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontFamily: BODY, fontSize: '0.85rem', color: C.ink, fontWeight: 700 }}>Total</div>
+                <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1.3rem', color: C.green, letterSpacing: '-0.02em' }}>{deck.price}</div>
+              </div>
+            </div>
+
+            <button onClick={onBuy} style={{
+              width: '100%', background: C.green, border: 'none',
+              borderRadius: `${R - 6}px`, padding: '0.95rem',
+              cursor: 'pointer', marginBottom: '0.8rem'
+            }}>
+              <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1rem', color: '#000' }}>Comprar agora · {deck.price}</div>
+              <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: '#1a3d00', marginTop: '0.1rem' }}>pix · cartão · pagamento único</div>
+            </button>
+
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.8rem' }}>
+              <input
+                value={couponInput}
+                onChange={e => { setCouponInput(e.target.value); setCouponError(''); }}
+                placeholder="Tem um cupom?"
+                style={{
+                  flex: 1, background: '#111', border: `1px solid ${C.border}`,
+                  borderRadius: '10px', padding: '0.65rem 0.9rem',
+                  color: C.ink, fontFamily: BODY, fontSize: '0.85rem', outline: 'none'
+                }}
+              />
+              <button onClick={redeemCoupon} style={{
+                background: 'transparent', border: `1px solid ${C.border}`,
+                borderRadius: '10px', padding: '0.65rem 1rem',
+                color: C.ink, fontFamily: BODY, fontSize: '0.8rem',
+                fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap'
+              }}>
+                Aplicar
+              </button>
+            </div>
+            {couponError && <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.red, marginBottom: '0.4rem' }}>{couponError}</div>}
+            {couponSuccess && <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.green, marginBottom: '0.4rem', fontWeight: 600 }}>Cupom aplicado! Baralho desbloqueado.</div>}
+
+            <div style={{ textAlign: 'center', fontFamily: BODY, fontSize: '0.65rem', color: C.inkMuted }}>
+              compra única · disponível em todos seus dispositivos
+            </div>
+          </div>
+        </div>
+      )}
+    </AppShell>
+  );
+}
+
 // ============ APP PRINCIPAL ============
 export default function App() {
-  const [stage, setStage] = useState('setupCount'); // + 'gameOver'
+  const [stage, setStage] = useState('setupCount'); // + 'gameOver' + 'deckEmpty'
   const [playerCount, setPlayerCount] = useState(4);
   const [selectedDeck, setSelectedDeck] = useState(DECK_PROIBIDAO);
   const [isPremiumUnlocked, setIsPremiumUnlocked] = useState(false);
@@ -1278,9 +1465,13 @@ export default function App() {
   }, []);
 
   const drawCard = (d) => {
-    const pool = d.length ? d : shuffle(CARDS);
-    setCurrentCard(pool[0]);
-    setDeck(pool.slice(1));
+    if (d.length === 0) {
+      // baralho esgotado
+      setStage('deckEmpty');
+      return;
+    }
+    setCurrentCard(d[0]);
+    setDeck(d.slice(1));
   };
 
   const startGame = (names, deck, isPremium) => {
@@ -1379,7 +1570,7 @@ export default function App() {
       round={round}
       onHome={goHome}
       onStart={() => setStage('voteChoice')}
-      onSkip={() => { drawCard(deck); }}
+      onSkip={() => { if (deck.length === 0) { setStage('deckEmpty'); } else { drawCard(deck); } }}
     />
   );
   if (stage === 'voteChoice') return (
@@ -1411,6 +1602,23 @@ export default function App() {
       onNext={nextRound} onHome={goHome}
     />
   );
+  if (stage === 'deckEmpty') return (
+    <DeckEmpty
+      deck={selectedDeck}
+      onBuy={() => {
+        setIsPremiumUnlocked(true);
+        // recarrega baralho completo e continua
+        const cards = selectedDeck.cards;
+        const d = shuffle(cards);
+        setCurrentCard(d[0]); setDeck(d.slice(1));
+        setRound(round + 1); setVotes([]);
+        setCurrentPlayerIdx(players.findIndex((_, i) => !skippedPlayers.includes(i)));
+        setStage('card');
+      }}
+      onHome={goHome}
+    />
+  );
+
   if (stage === 'gameOver') return (
     <div style={{
       minHeight: '100vh', background: C.bg, display: 'flex',
