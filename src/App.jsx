@@ -546,16 +546,19 @@ function SetupCount({ onNext }) {
             </div>
 
             {/* Botão comprar */}
-            <button style={{
-              width: '100%', background: C.green, border: 'none',
-              borderRadius: `${R - 6}px`, padding: '0.95rem',
-              cursor: 'pointer', marginBottom: '0.8rem'
-            }}>
+            <button
+              onClick={() => alert('Pagamento em breve! Use um cupom por enquanto.')}
+              style={{
+                width: '100%', background: C.green, border: 'none',
+                borderRadius: `${R - 6}px`, padding: '0.95rem',
+                cursor: 'pointer', marginBottom: '0.8rem'
+              }}
+            >
               <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1rem', color: '#000' }}>
                 Comprar agora · {deck.price}
               </div>
               <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: '#1a3d00', marginTop: '0.1rem' }}>
-                pix · cartão · pagamento único
+                pix · cartão · em breve
               </div>
             </button>
 
@@ -1401,13 +1404,16 @@ function DeckEmpty({ deck, isPremium, onBuy, onHome }) {
               </div>
             </div>
 
-            <button onClick={onBuy} style={{
-              width: '100%', background: C.green, border: 'none',
-              borderRadius: `${R - 6}px`, padding: '0.95rem',
-              cursor: 'pointer', marginBottom: '0.8rem'
-            }}>
+            <button
+              onClick={() => alert('Pagamento em breve! Use um cupom por enquanto.')}
+              style={{
+                width: '100%', background: C.green, border: 'none',
+                borderRadius: `${R - 6}px`, padding: '0.95rem',
+                cursor: 'pointer', marginBottom: '0.8rem'
+              }}
+            >
               <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1rem', color: '#000' }}>Comprar agora · {deck.price}</div>
-              <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: '#1a3d00', marginTop: '0.1rem' }}>pix · cartão · pagamento único</div>
+              <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: '#1a3d00', marginTop: '0.1rem' }}>pix · cartão · em breve</div>
             </button>
 
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.8rem' }}>
