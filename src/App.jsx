@@ -86,7 +86,7 @@ const shuffle = arr => {
 // - Header fixo no topo (back + label + home)
 // - Área de conteúdo scrollável no meio
 // - CTA sempre colado no bottom
-function AppShell({ onBack, onHome, label, cta, children }) {
+function AppShell({ onBack, onHome, label, cta, children, onExample }) {
   return (
     <div style={{
       position: 'fixed', inset: 0,
@@ -120,7 +120,16 @@ function AppShell({ onBack, onHome, label, cta, children }) {
             {label}
           </div>
         )}
-        <div style={{ width: '40px', display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '70px', justifyContent: 'flex-end' }}>
+          {onExample && (
+            <button onClick={onExample} style={{
+              background: 'transparent', border: `1px solid ${C.border}`,
+              borderRadius: '100px', width: '24px', height: '24px',
+              cursor: 'pointer', color: C.inkMuted,
+              fontFamily: BODY, fontSize: '0.75rem', fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
+            }}>?</button>
+          )}
           {onHome
             ? <button onClick={onHome} style={{
                 background: 'none', border: 'none', cursor: 'pointer',
@@ -293,7 +302,7 @@ function Modal({ children, onClose }) {
 }
 
 // ============ TELA 1: SETUP (baralho + jogadores) ============
-function SetupCount({ onNext }) {
+function SetupCount({ onNext, onTutorial }) {
   const [count, setCount] = useState(4);
   const [selectedDeck, setSelectedDeck] = useState(DECK_PROIBIDAO);
   // isPremium: em produção viria do backend/localStorage após compra
@@ -338,6 +347,18 @@ function SetupCount({ onNext }) {
           EU NÃO VOU<br />ME EXPOR
         </div>
         <Tagline />
+        <button
+          onClick={onTutorial}
+          style={{
+            marginTop: '0.6rem', background: 'transparent',
+            border: `1px solid ${C.border}`, borderRadius: '100px',
+            padding: '0.25rem 0.9rem', cursor: 'pointer',
+            fontFamily: BODY, fontSize: '0.65rem', color: C.inkMuted,
+            fontWeight: 600, letterSpacing: '0.1em'
+          }}
+        >
+          como jogar?
+        </button>
       </div>
 
       {/* Seção baralho */}
@@ -707,11 +728,13 @@ function SetupNames({ initialCount, onNext, onBack }) {
 }
 
 // ============ TELA 3: CARTA ============
-function CardReveal({ question, round, onStart, onHome, onSkip }) {
+function CardReveal({ question, round, onStart, onHome, onSkip, onExample }) {
   return (
     <AppShell
       onHome={onHome}
       label={`RODADA ${round}`}
+      onExample={onExample}
+      onExample={onExample}
       cta={<Btn onClick={onStart} color={C.bg} bg={C.ink} border={C.ink}>Começar</Btn>}
     >
       {/* Botão pular — pill branca, alinhada à direita */}
@@ -758,7 +781,7 @@ function CardReveal({ question, round, onStart, onHome, onSkip }) {
 }
 
 // ============ TELA 4: VOTO ESCOLHA ============
-function PlayerVoteChoice({ question, round, playerName, playerIndex, totalPlayers, activePlayers, onChoose, onHome, onPlayerLeft }) {
+function PlayerVoteChoice({ question, round, playerName, playerIndex, totalPlayers, activePlayers, onChoose, onHome, onPlayerLeft, onExample }) {
   const [leftPopup, setLeftPopup] = useState(false);
 
   return (
@@ -827,7 +850,7 @@ function PlayerVoteChoice({ question, round, playerName, playerIndex, totalPlaye
 }
 
 // ============ TELA 5: VOTO SENHA ============
-function PlayerVotePin({ playerName, playerIndex, totalPlayers, round, onConfirm, onBack, onHome, onPlayerLeft }) {
+function PlayerVotePin({ playerName, playerIndex, totalPlayers, round, onConfirm, onBack, onHome, onPlayerLeft, onExample }) {
   const [pin, setPin] = useState('');
   const [leftPopup, setLeftPopup] = useState(false);
 
@@ -836,6 +859,7 @@ function PlayerVotePin({ playerName, playerIndex, totalPlayers, round, onConfirm
       onBack={onBack}
       onHome={onHome}
       label={`RODADA ${round}`}
+      onExample={onExample}
       cta={
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           <Btn onClick={() => onConfirm(pin)} disabled={pin.length !== 3} color={C.bg} bg={C.ink} border={C.ink}>
@@ -896,7 +920,7 @@ function PlayerVotePin({ playerName, playerIndex, totalPlayers, round, onConfirm
 }
 
 // ============ TELA 6: PLACAR ============
-function Scoreboard({ question, round, players, votes, skipped, onNext, onHome }) {
+function Scoreboard({ question, round, players, votes, skipped, onNext, onHome, onExample }) {
   const activeVotes = votes.filter(v => !skipped.includes(v.playerIdx));
   const yesCount = activeVotes.filter(v => v.vote === 'yes').length;
   const noCount = activeVotes.filter(v => v.vote === 'no').length;
@@ -969,6 +993,7 @@ function Scoreboard({ question, round, players, votes, skipped, onNext, onHome }
     <AppShell
       onHome={() => setHomeConfirm(true)}
       label={`RODADA ${round}`}
+      onExample={onExample}
       cta={<Btn onClick={onNext} color={C.bg} bg={C.ink} border={C.ink}>Próxima pergunta</Btn>}
     >
       <div>
@@ -1449,12 +1474,325 @@ function DeckEmpty({ deck, isPremium, onBuy, onHome }) {
   );
 }
 
+
+// ============ ONBOARDING ============
+const ONBOARDING_STEPS = [
+  {
+    emoji: '⚠️',
+    title: 'Cuidado!',
+    text: 'Você está prestes a jogar um jogo onde talvez vá expor os seus maiores segredos.',
+    accent: '#ff3d5a'
+  },
+  {
+    emoji: '🚫',
+    title: 'Regra nº 1',
+    text: 'Nesse jogo você não pode mentir. Aqui vale a honestidade — ou os shots.',
+    accent: '#ff3d5a'
+  },
+  {
+    emoji: '🥃',
+    title: 'Preparem os shots',
+    text: 'Cadastre todos os jogadores e deixe as bebidas prontas. A partir de agora, vocês vão beber de verdade.',
+    accent: '#9fff3d'
+  },
+  {
+    emoji: '🃏',
+    title: 'Responda na sua vez',
+    text: 'Uma pergunta aparece na tela. Cada jogador responde SIM ou NÃO com sinceridade, um de cada vez.',
+    accent: '#ffffff'
+  },
+  {
+    emoji: '🔒',
+    title: 'Crie sua senha',
+    text: 'Respondeu? Crie uma senha de 3 dígitos para bloquear seu voto. Não conta pra ninguém! Passe o celular pro próximo.',
+    accent: '#4d5fff'
+  },
+  {
+    emoji: '📊',
+    title: 'O placar aparece',
+    text: 'Quando todos votaram, o app mostra quantos disseram SIM e quantos disseram NÃO — sem revelar quem.',
+    accent: '#ffffff'
+  },
+  {
+    emoji: '👆',
+    title: 'Votem na minoria',
+    text: 'Hora do debate! Olhem uns para os outros, discutam, e decidam juntos quem votou na minoria. O app só mostra o resultado — a votação é de vocês.',
+    accent: '#9fff3d'
+  },
+  {
+    emoji: '💥',
+    title: 'Os votados bebem',
+    text: 'Os mais apontados pelo grupo bebem 1 shot cada — a menos que queiram se expor e revelar o voto.',
+    accent: '#ff3d5a'
+  },
+  {
+    emoji: '🎯',
+    title: 'Exemplo de rodada',
+    text: 'Veja como funciona na prática →',
+    accent: '#9fff3d',
+    isExample: true
+  }
+];
+
+function Onboarding({ onDone }) {
+  const [step, setStep] = useState(0);
+  const current = ONBOARDING_STEPS[step];
+  const isLast = step === ONBOARDING_STEPS.length - 1;
+  const total = ONBOARDING_STEPS.length;
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: C.bg,
+      display: 'flex', flexDirection: 'column',
+      maxWidth: '480px', margin: '0 auto'
+    }}>
+      {/* Header */}
+      <div style={{
+        flexShrink: 0, display: 'flex',
+        alignItems: 'center', justifyContent: 'space-between',
+        padding: '3rem 1.4rem 1rem'
+      }}>
+        <div style={{ width: '60px' }}>
+          {step > 0 && (
+            <button onClick={() => setStep(step - 1)} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: C.inkSoft, fontFamily: BODY, fontSize: '0.85rem',
+              fontWeight: 500, padding: 0, display: 'flex', alignItems: 'center', gap: '0.3rem'
+            }}>
+              <span style={{ fontSize: '1.1rem' }}>←</span> Voltar
+            </button>
+          )}
+        </div>
+
+        {/* dots */}
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          {Array.from({ length: total }).map((_, i) => (
+            <div key={i} style={{
+              width: i === step ? '14px' : '5px',
+              height: '5px', borderRadius: '3px',
+              background: i === step ? C.ink : C.border,
+              transition: 'all 0.3s'
+            }} />
+          ))}
+        </div>
+
+        <button onClick={onDone} style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: C.inkMuted, fontFamily: BODY, fontSize: '0.65rem',
+          fontWeight: 700, letterSpacing: '0.12em', padding: 0, width: '60px', textAlign: 'right'
+        }}>
+          PULAR
+        </button>
+      </div>
+
+      {/* Conteúdo */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '0 2rem', textAlign: 'center'
+      }}>
+        <div style={{
+          fontSize: '4.5rem', marginBottom: '1.5rem', lineHeight: 1
+        }}>
+          {current.emoji}
+        </div>
+
+        <div style={{
+          fontFamily: TITLE, fontWeight: 900,
+          fontSize: '1.8rem', color: C.ink,
+          letterSpacing: '-0.03em', lineHeight: 1.05,
+          marginBottom: '1rem'
+        }}>
+          {current.title}
+        </div>
+
+        <div style={{
+          fontFamily: BODY, fontSize: '0.95rem',
+          color: C.inkSoft, lineHeight: 1.6,
+          maxWidth: '300px'
+        }}>
+          {current.text}
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div style={{ flexShrink: 0, padding: '0.8rem 1.4rem 1.8rem' }}>
+        {isLast ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+            <ExamplePreview />
+            <Btn onClick={onDone} color={C.bg} bg={C.ink} border={C.ink}>
+              Bora jogar!
+            </Btn>
+          </div>
+        ) : (
+          <Btn onClick={() => setStep(step + 1)} color={C.bg} bg={C.ink} border={C.ink}>
+            Continuar
+          </Btn>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Preview compacto do exemplo na última tela do onboarding
+function ExamplePreview() {
+  return (
+    <div style={{
+      background: C.card, border: `1.5px solid ${C.border}`,
+      borderRadius: `${R - 4}px`, padding: '0.9rem 1rem'
+    }}>
+      <div style={{
+        fontFamily: BODY, fontSize: '0.62rem', color: C.inkMuted,
+        fontWeight: 700, letterSpacing: '0.15em', marginBottom: '0.6rem'
+      }}>
+        EXEMPLO RÁPIDO
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        {[
+          { name: 'Victor', result: 'revelou NÃO (grupo achava SIM)', color: C.red, drink: 'quem votou nele bebe 2 🥃🥃' },
+          { name: 'Maria', result: 'revelou SIM (grupo acertou)', color: C.green, drink: 'ela não bebe ✓' },
+          { name: 'João', result: 'não se expôs', color: C.inkMuted, drink: 'bebe 1 shot 🥃' },
+        ].map((p, i) => (
+          <div key={i} style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '0.35rem 0.5rem',
+            background: '#0a0a0a', borderRadius: '6px'
+          }}>
+            <div>
+              <div style={{ fontFamily: TITLE, fontWeight: 700, fontSize: '0.78rem', color: C.ink }}>{p.name}</div>
+              <div style={{ fontFamily: BODY, fontSize: '0.6rem', color: p.color }}>{p.result}</div>
+            </div>
+            <div style={{ fontFamily: BODY, fontSize: '0.6rem', color: C.inkMuted, textAlign: 'right', maxWidth: '100px' }}>{p.drink}</div>
+          </div>
+        ))}
+        <div style={{
+          fontFamily: BODY, fontSize: '0.62rem', color: C.inkMuted,
+          padding: '0.3rem 0.5rem', borderTop: `1px solid ${C.border}`, marginTop: '0.2rem'
+        }}>
+          💡 Empate na votação? Refazem. Se persistir, todos bebem 1 e passa a rodada.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============ TELA DE EXEMPLO (acessível durante o jogo) ============
+function ExampleScreen({ onClose }) {
+  return (
+    <AppShell
+      onBack={onClose}
+      label="COMO FUNCIONA"
+    >
+      <div style={{ paddingTop: '0.5rem' }}>
+        <div style={{
+          fontFamily: TITLE, fontWeight: 900, fontSize: '1.5rem',
+          color: C.ink, letterSpacing: '-0.03em', marginBottom: '0.3rem'
+        }}>
+          Exemplo de rodada
+        </div>
+        <div style={{
+          fontFamily: BODY, fontSize: '0.82rem', color: C.inkMuted,
+          marginBottom: '1.2rem', lineHeight: 1.4,
+          fontStyle: 'italic'
+        }}>
+          "Já deu um beijo triplo?"
+        </div>
+
+        {/* Placar */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.8rem' }}>
+          {[{ l: 'SIM', n: 3, c: C.green }, { l: 'NÃO', n: 4, c: C.red }].map((s, i) => (
+            <div key={i} style={{
+              background: C.card, border: `1.5px solid ${s.c}55`,
+              borderRadius: `${R - 6}px`, padding: '0.6rem', textAlign: 'center'
+            }}>
+              <div style={{ fontFamily: BODY, fontSize: '0.6rem', color: s.c, fontWeight: 700, letterSpacing: '0.12em' }}>{s.l}</div>
+              <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '2rem', color: C.ink, lineHeight: 1 }}>{s.n}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Action */}
+        <div style={{
+          background: C.card, border: `2px solid ${C.green}`,
+          borderRadius: `${R - 4}px`, padding: '0.7rem 1rem',
+          textAlign: 'center', marginBottom: '1rem'
+        }}>
+          <div style={{ fontFamily: BODY, fontSize: '0.6rem', color: C.inkMuted, fontWeight: 700, letterSpacing: '0.15em', marginBottom: '0.3rem' }}>AÇÃO DA RODADA</div>
+          <div style={{ fontFamily: BODY, fontSize: '0.8rem', color: C.ink, marginBottom: '0.2rem' }}>
+            O grupo debate e vota em quem colocou <span style={{ color: C.green, fontWeight: 700 }}>SIM</span>
+          </div>
+          <div style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkMuted }}>
+            Olhem uns pros outros, discutam e decidam juntos — a votação é de vocês
+          </div>
+        </div>
+
+        {/* Casos */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '0.8rem' }}>
+          {[
+            {
+              name: 'Victor', badge: 'revelou: NÃO', badgeColor: C.red,
+              desc: 'O grupo achava que ele votou SIM. Ele se expôs e mostrou NÃO.',
+              result: '→ quem votou nele bebe 2 shots 🥃🥃', resultColor: C.red,
+              bg: `${C.red}12`, border: `${C.red}44`
+            },
+            {
+              name: 'Maria', badge: 'revelou: SIM', badgeColor: C.green,
+              desc: 'O grupo votou SIM nela e era isso mesmo. Ela confirmou.',
+              result: '→ Maria não bebe nada ✓', resultColor: C.green,
+              bg: `${C.green}12`, border: `${C.green}44`
+            },
+            {
+              name: 'João', badge: '🔒 não se expôs', badgeColor: C.inkMuted,
+              desc: 'João preferiu não revelar. Sem julgamentos.',
+              result: '→ João bebe 1 shot 🥃', resultColor: C.inkSoft,
+              bg: C.card, border: C.border
+            }
+          ].map((p, i) => (
+            <div key={i} style={{
+              background: p.bg, border: `1px solid ${p.border}`,
+              borderRadius: `${R - 6}px`, padding: '0.75rem 0.9rem'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '0.9rem', color: C.ink }}>{p.name}</div>
+                <div style={{
+                  background: `${p.badgeColor}22`, borderRadius: '100px',
+                  padding: '0.15rem 0.6rem',
+                  fontFamily: BODY, fontSize: '0.58rem', color: p.badgeColor, fontWeight: 700
+                }}>{p.badge}</div>
+              </div>
+              <div style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkMuted, lineHeight: 1.4, marginBottom: '0.3rem' }}>{p.desc}</div>
+              <div style={{ fontFamily: BODY, fontSize: '0.72rem', color: p.resultColor, fontWeight: 700 }}>{p.result}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Empate */}
+        <div style={{
+          background: '#0a0a0a', border: `1px solid ${C.border}`,
+          borderRadius: `${R - 8}px`, padding: '0.7rem 0.9rem', marginBottom: '0.5rem'
+        }}>
+          <div style={{ fontFamily: BODY, fontSize: '0.6rem', color: C.inkMuted, fontWeight: 700, letterSpacing: '0.12em', marginBottom: '0.3rem' }}>
+            SE DER EMPATE NA VOTAÇÃO
+          </div>
+          <div style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkMuted, lineHeight: 1.5 }}>
+            Refazem a votação. Se continuar empatado, todos bebem 1 shot e passa pra próxima rodada.
+          </div>
+        </div>
+      </div>
+    </AppShell>
+  );
+}
+
 // ============ APP PRINCIPAL ============
 export default function App() {
-  const [stage, setStage] = useState('setupCount'); // + 'gameOver' + 'deckEmpty'
+  const [stage, setStage] = useState('onboarding'); // onboarding, setupCount, setupNames, card, voteChoice, votePin, score, gameOver, deckEmpty, example
+  const [prevStage, setPrevStage] = useState(null); // para voltar do exemplo
   const [playerCount, setPlayerCount] = useState(4);
   const [selectedDeck, setSelectedDeck] = useState(DECK_PROIBIDAO);
   const [isPremiumUnlocked, setIsPremiumUnlocked] = useState(false);
+
+  const goExample = () => { setPrevStage(stage); setStage('example'); };
+  const closeExample = () => setStage(prevStage || 'setupCount');
   const [players, setPlayers] = useState([]);
   const [round, setRound] = useState(1);
   const [deck, setDeck] = useState([]);
@@ -1577,13 +1915,18 @@ export default function App() {
     .slice(0, currentPlayerIdx + 1)
     .filter((_, i) => !skippedPlayers.includes(i)).length - 1;
 
+  if (stage === 'onboarding') return <Onboarding onDone={() => setStage('setupCount')} />;
+  if (stage === 'example') return <ExampleScreen onClose={closeExample} />;
   if (stage === 'setupCount') return (
-    <SetupCount onNext={(c, deck, isPremium) => {
-      setPlayerCount(c);
-      setSelectedDeck(deck);
-      setIsPremiumUnlocked(isPremium);
-      setStage('setupNames');
-    }} />
+    <SetupCount
+      onNext={(c, deck, isPremium) => {
+        setPlayerCount(c);
+        setSelectedDeck(deck);
+        setIsPremiumUnlocked(isPremium);
+        setStage('setupNames');
+      }}
+      onTutorial={() => { setPrevStage('setupCount'); setStage('onboarding'); }}
+    />
   );
   if (stage === 'setupNames') return (
     <SetupNames
@@ -1599,6 +1942,7 @@ export default function App() {
       onHome={goHome}
       onStart={() => setStage('voteChoice')}
       onSkip={() => { if (deck.length === 0) { setStage('deckEmpty'); } else { drawCard(deck); } }}
+      onExample={goExample}
     />
   );
   if (stage === 'voteChoice') return (
@@ -1610,6 +1954,7 @@ export default function App() {
       onChoose={handleChoose}
       onHome={goHome}
       onPlayerLeft={handlePlayerLeft}
+      onExample={goExample}
     />
   );
   if (stage === 'votePin') return (
@@ -1621,13 +1966,14 @@ export default function App() {
       onBack={() => { setPendingVote(null); setStage('voteChoice'); }}
       onHome={goHome}
       onPlayerLeft={handlePlayerLeft}
+      onExample={goExample}
     />
   );
   if (stage === 'score') return (
     <Scoreboard
       question={currentCard} round={round}
       players={players} votes={votes} skipped={skippedPlayers}
-      onNext={nextRound} onHome={goHome}
+      onNext={nextRound} onHome={goHome} onExample={goExample}
     />
   );
   if (stage === 'deckEmpty') return (
