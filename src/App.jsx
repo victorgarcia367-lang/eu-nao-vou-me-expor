@@ -1935,7 +1935,9 @@ export default function App() {
     setAgeDenied(true);
   };
 
-  const [stage, setStage] = useState('onboarding');
+  const [stage, setStage] = useState(() => {
+    return localStorage.getItem('onboarding_done') === 'true' ? 'setupCount' : 'onboarding';
+  });
   const [prevStage, setPrevStage] = useState(null);
   const [playerCount, setPlayerCount] = useState(4);
   const [selectedDeck, setSelectedDeck] = useState(DECK_PROIBIDAO);
@@ -2072,7 +2074,10 @@ export default function App() {
   if (ageDenied) return <AccessDenied />;
   if (!ageConfirmed) return <AgeGate onConfirm={handleAgeConfirm} onDeny={handleAgeDeny} />;
 
-  if (stage === 'onboarding') return <Onboarding onDone={() => setStage('setupCount')} />;
+  if (stage === 'onboarding') return <Onboarding onDone={() => {
+    localStorage.setItem('onboarding_done', 'true');
+    setStage('setupCount');
+  }} />;
   if (stage === 'example') return <ExampleScreen onClose={closeExample} />;
   if (stage === 'setupCount') return (
     <SetupCount
