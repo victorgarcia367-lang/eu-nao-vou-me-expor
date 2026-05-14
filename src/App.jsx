@@ -59,7 +59,9 @@ const ALL_DECKS = [DECK_PROIBIDAO];
 // ============ TOKENS ============
 const C = {
   bg: '#000000', card: '#0c0c0c', ink: '#ffffff',
-  inkMuted: '#555555', inkSoft: '#888888', border: '#1e1e1e',
+  inkMuted: '#aaaaaa',  // era #555 — contraste 7:1 ✓
+  inkSoft: '#888888',   // era #888 — usado só em elementos secundários grandes
+  border: '#2e2e2e',    // era #1e1e1e — um pouco mais visível
   green: '#9fff3d', greenGlow: '#9fff3d44',
   red: '#ff3d5a', redGlow: '#ff3d5a44',
   blue: '#4d5fff', blueGlow: '#4d5fff44',
