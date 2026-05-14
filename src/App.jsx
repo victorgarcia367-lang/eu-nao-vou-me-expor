@@ -64,7 +64,7 @@ const C = {
   border: '#2e2e2e',    // era #1e1e1e — um pouco mais visível
   green: '#9fff3d', greenGlow: '#9fff3d44',
   red: '#ff3d5a', redGlow: '#ff3d5a44',
-  blue: '#4d5fff', blueGlow: '#4d5fff44',
+  blue: '#7b87ff', blueGlow: '#7b87ff44',
 };
 const R = 22;
 const TITLE = '"Archivo", sans-serif';
@@ -984,8 +984,9 @@ function Scoreboard({ question, round, players, votes, skipped, onNext, onHome, 
       revealPlayer(unlockingIdx);
     } else {
       setPinError(true);
-      setTimeout(() => setPinError(false), 600);
+      const t = setTimeout(() => setPinError(false), 600);
       setPinAttempt('');
+      return () => clearTimeout(t);
     }
   };
 
@@ -1854,8 +1855,13 @@ export default function App() {
 
   const goHome = () => {
     setStage('setupCount');
-    setVotes([]); setSkippedPlayers([]);
+    setVotes([]);
+    setSkippedPlayers([]);
     setPendingVote(null);
+    setCurrentPlayerIdx(0);
+    setRound(1);
+    setCurrentCard('');
+    setDeck([]);
   };
 
   // Acha próximo player ativo (não skipped)
