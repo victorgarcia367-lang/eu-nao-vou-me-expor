@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'victorgarcia367@gmail.com';
+    }
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // users/{uid} — perfil + mapa de compras
+    match /users/{uid} {
+      allow get: if (isAuth() && request.auth.uid == uid) || isAdmin();
+      allow list: if isAdmin();
+
+      // Criação no primeiro login — uid do documento deve bater com o auth
+      allow create: if isAuth()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid;
+
+      // Usuário atualiza o próprio doc (purchases via registerPurchase/redeemCoupon)
+      allow update: if (isAuth() && request.auth.uid == uid) || isAdmin();
+    }
+
+    // purchases/{uid}_{deckId} — log plano de compras para o painel admin
+    match /purchases/{purchaseId} {
+      allow read: if isAdmin();
+
+      // Usuário só cria o registro com o próprio uid no campo data.uid
+      allow create: if isAuth()
+        && request.resource.data.uid == request.auth.uid;
+
+      allow update, delete: if isAdmin();
+    }
+
+    // coupons/{CODE} — cupons single-use anti-fraude
+    match /coupons/{code} {
+      // Usuário autenticado lê para validar; admin lista tudo
+      allow get: if isAuth();
+      allow list: if isAdmin();
+
+      // Admin cria, deleta e reseta cupons
+      allow create, delete: if isAdmin();
+
+      allow update: if isAdmin()
+        // Usuário só pode marcar usedBy com o próprio UID, uma única vez
+        || (isAuth()
+          && (!('usedBy' in resource.data) || resource.data.usedBy == null)
+          && request.resource.data.usedBy == request.auth.uid
+          && request.resource.data.usedAt != null
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedBy', 'usedAt']));
+    }
+  }
+}
