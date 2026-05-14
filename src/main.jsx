@@ -2,12 +2,15 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+import Admin from './Admin.jsx'
 import { AuthProvider } from './AuthContext.jsx'
+
+const isAdmin = window.location.pathname.startsWith('/admin');
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
-      <App />
+      {isAdmin ? <Admin /> : <App />}
     </AuthProvider>
   </StrictMode>,
 )
