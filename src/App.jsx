@@ -534,151 +534,127 @@ function SetupCount({ onNext, onTutorial }) {
             }}
           >
             {/* handle */}
-            <div style={{
-              width: '2rem', height: '3px', background: '#333',
-              borderRadius: '2px', margin: '0 auto 1.2rem'
-            }} />
+            <div style={{ width: '2rem', height: '3px', background: '#333', borderRadius: '2px', margin: '0 auto 1.2rem' }} />
 
-            <div style={{ textAlign: 'center', marginBottom: '1.2rem' }}>
-              <div style={{
-                fontFamily: TITLE, fontWeight: 900, fontSize: '1.3rem',
-                color: C.ink, letterSpacing: '-0.02em', marginBottom: '0.25rem'
-              }}>
-                {deck.name}
-              </div>
-              <div style={{ fontFamily: BODY, fontSize: '0.75rem', color: C.inkMuted }}>
-                baralho completo · {deck.totalCount} cartas
-              </div>
-            </div>
-
-            {/* Resumo */}
-            <div style={{
-              background: '#111', border: `1px solid ${C.border}`,
-              borderRadius: `${R - 6}px`, padding: '0.9rem 1rem', marginBottom: '1rem'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.inkSoft }}>
-                  {deck.freeCount} cartas grátis
-                </div>
-                <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.green, fontWeight: 700 }}>incluso</div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-                <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.inkSoft }}>
-                  {premiumCount} cartas premium
-                </div>
-                <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.ink, fontWeight: 700 }}>desbloqueadas</div>
-              </div>
-              <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontFamily: BODY, fontSize: '0.85rem', color: C.ink, fontWeight: 700 }}>Total</div>
-                <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1.3rem', color: C.green, letterSpacing: '-0.02em' }}>
-                  {deck.price}
-                </div>
-              </div>
-            </div>
-
-            {/* Botão comprar */}
-            <button
-              onClick={() => alert('Pagamento em breve! Use um cupom por enquanto.')}
-              style={{
-                width: '100%', background: C.green, border: 'none',
-                borderRadius: `${R - 6}px`, padding: '0.95rem',
-                cursor: 'pointer', marginBottom: '0.8rem'
-              }}
-            >
-              <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1rem', color: '#000' }}>
-                Comprar agora · {deck.price}
-              </div>
-              <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: '#1a3d00', marginTop: '0.1rem' }}>
-                pix · cartão · em breve
-              </div>
-            </button>
-
-            {/* Login Google se não estiver logado */}
-            {!user && (
-              <button
-                onClick={handleLogin}
-                disabled={loadingLogin}
-                style={{
-                  width: '100%', background: '#fff', border: 'none',
-                  borderRadius: `${R - 6}px`, padding: '0.85rem',
-                  cursor: loadingLogin ? 'not-allowed' : 'pointer',
-                  marginBottom: '0.7rem', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
-                  opacity: loadingLogin ? 0.7 : 1
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.1l-6.2-5.2C29.3 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.4 4.3-4.4 5.7l6.2 5.2C36.9 40.1 44 35 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
-                <span style={{ fontFamily: BODY, fontWeight: 700, fontSize: '0.9rem', color: '#222' }}>
-                  {loadingLogin ? 'Entrando...' : 'Entrar com Google'}
-                </span>
-              </button>
-            )}
-
-            {user && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                marginBottom: '0.7rem', padding: '0.5rem 0.7rem',
-                background: '#111', borderRadius: '10px', border: `1px solid ${C.border}`
-              }}>
+            {isPremium ? (
+              /* ── Estado: já comprou ── */
+              <div style={{ textAlign: 'center', paddingBottom: '0.5rem' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>🎉</div>
                 <div style={{
-                  width: '28px', height: '28px', borderRadius: '50%',
-                  background: C.green, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', fontSize: '0.7rem', color: '#000', fontWeight: 700, flexShrink: 0
+                  fontFamily: TITLE, fontWeight: 900, fontSize: '1.4rem',
+                  color: C.green, letterSpacing: '-0.02em', marginBottom: '0.4rem'
                 }}>
-                  {user.displayName?.[0] || user.email?.[0] || '?'}
+                  Baralho liberado!
                 </div>
-                <div style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkMuted, overflow: 'hidden' }}>
-                  <div style={{ color: C.ink, fontWeight: 600, fontSize: '0.75rem' }}>{user.displayName || 'Logado'}</div>
-                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+                <div style={{ fontFamily: BODY, fontSize: '0.82rem', color: C.inkMuted, marginBottom: '1.5rem' }}>
+                  Você já tem acesso a todas as {deck.totalCount} cartas do {deck.name}.
                 </div>
-              </div>
-            )}
-
-            {/* Cupom */}
-            <div style={{ marginBottom: '0.8rem' }}>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input
-                  value={couponInput}
-                  onChange={e => { setCouponInput(e.target.value); setCouponError(''); }}
-                  placeholder="Tem um cupom?"
-                  style={{
-                    flex: 1, background: '#111', border: `1px solid ${C.border}`,
-                    borderRadius: '10px', padding: '0.65rem 0.9rem',
-                    color: C.ink, fontFamily: BODY, fontSize: '0.85rem',
-                    outline: 'none', letterSpacing: '0.02em'
-                  }}
-                />
-                <button
-                  onClick={handleCoupon}
-                  disabled={loadingCoupon}
-                  style={{
-                    background: 'transparent', border: `1px solid ${C.border}`,
-                    borderRadius: '10px', padding: '0.65rem 1rem',
-                    color: C.ink, fontFamily: BODY, fontSize: '0.8rem',
-                    fontWeight: 600, cursor: loadingCoupon ? 'not-allowed' : 'pointer',
-                    whiteSpace: 'nowrap', opacity: loadingCoupon ? 0.6 : 1
-                  }}
+                <Btn
+                  onClick={() => setShowBuySheet(false)}
+                  color={C.bg} bg={C.green} border={C.green}
                 >
-                  {loadingCoupon ? '...' : 'Aplicar'}
-                </button>
+                  Jogar agora
+                </Btn>
               </div>
-              {couponError && (
-                <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.red, marginTop: '0.4rem' }}>
-                  {couponError}
+            ) : (
+              /* ── Estado: ainda não comprou ── */
+              <>
+                <div style={{ textAlign: 'center', marginBottom: '1.2rem' }}>
+                  <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1.3rem', color: C.ink, letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
+                    {deck.name}
+                  </div>
+                  <div style={{ fontFamily: BODY, fontSize: '0.75rem', color: C.inkMuted }}>
+                    baralho completo · {deck.totalCount} cartas
+                  </div>
                 </div>
-              )}
-              {couponSuccess && (
-                <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.green, marginTop: '0.4rem', fontWeight: 600 }}>
-                  Cupom aplicado! Baralho completo desbloqueado.
-                </div>
-              )}
-            </div>
 
-            <div style={{
-              textAlign: 'center', fontFamily: BODY, fontSize: '0.65rem', color: C.inkMuted
-            }}>
-              compra única · disponível em todos seus dispositivos
-            </div>
+                {/* Resumo */}
+                <div style={{ background: '#111', border: `1px solid ${C.border}`, borderRadius: `${R - 6}px`, padding: '0.9rem 1rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.inkSoft }}>{deck.freeCount} cartas grátis</div>
+                    <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.green, fontWeight: 700 }}>incluso</div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
+                    <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.inkSoft }}>{premiumCount} cartas premium</div>
+                    <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.ink, fontWeight: 700 }}>desbloqueadas</div>
+                  </div>
+                  <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontFamily: BODY, fontSize: '0.85rem', color: C.ink, fontWeight: 700 }}>Total</div>
+                    <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1.3rem', color: C.green, letterSpacing: '-0.02em' }}>{deck.price}</div>
+                  </div>
+                </div>
+
+                {/* Botão comprar */}
+                <button
+                  onClick={() => alert('Pagamento em breve! Use um cupom por enquanto.')}
+                  style={{ width: '100%', background: C.green, border: 'none', borderRadius: `${R - 6}px`, padding: '0.95rem', cursor: 'pointer', marginBottom: '0.8rem' }}
+                >
+                  <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1rem', color: '#000' }}>Comprar agora · {deck.price}</div>
+                  <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: '#1a3d00', marginTop: '0.1rem' }}>pix · cartão · em breve</div>
+                </button>
+
+                {/* Login Google */}
+                {!user ? (
+                  <button onClick={handleLogin} disabled={loadingLogin} style={{
+                    width: '100%', background: '#fff', border: 'none',
+                    borderRadius: `${R - 6}px`, padding: '0.85rem',
+                    cursor: loadingLogin ? 'not-allowed' : 'pointer',
+                    marginBottom: '0.7rem', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+                    opacity: loadingLogin ? 0.7 : 1
+                  }}>
+                    <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.1l-6.2-5.2C29.3 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.4 4.3-4.4 5.7l6.2 5.2C36.9 40.1 44 35 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+                    <span style={{ fontFamily: BODY, fontWeight: 700, fontSize: '0.9rem', color: '#222' }}>
+                      {loadingLogin ? 'Entrando...' : 'Entrar com Google para usar cupom'}
+                    </span>
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.7rem', padding: '0.5rem 0.7rem', background: '#111', borderRadius: '10px', border: `1px solid ${C.border}` }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: C.green, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#000', fontWeight: 700, flexShrink: 0 }}>
+                      {user.displayName?.[0] || user.email?.[0] || '?'}
+                    </div>
+                    <div style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkMuted, overflow: 'hidden' }}>
+                      <div style={{ color: C.ink, fontWeight: 600, fontSize: '0.75rem' }}>{user.displayName || 'Logado'}</div>
+                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Cupom — só aparece se estiver logado */}
+                {user && (
+                  <div style={{ marginBottom: '0.8rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input
+                        value={couponInput}
+                        onChange={e => { setCouponInput(e.target.value); setCouponError(''); }}
+                        placeholder="Tem um cupom?"
+                        style={{
+                          flex: 1, background: '#111', border: `1px solid ${C.border}`,
+                          borderRadius: '10px', padding: '0.65rem 0.9rem',
+                          color: C.ink, fontFamily: BODY, fontSize: '0.85rem',
+                          outline: 'none', letterSpacing: '0.02em'
+                        }}
+                      />
+                      <button onClick={handleCoupon} disabled={loadingCoupon} style={{
+                        background: 'transparent', border: `1px solid ${C.border}`,
+                        borderRadius: '10px', padding: '0.65rem 1rem',
+                        color: C.ink, fontFamily: BODY, fontSize: '0.8rem',
+                        fontWeight: 600, cursor: loadingCoupon ? 'not-allowed' : 'pointer',
+                        whiteSpace: 'nowrap', opacity: loadingCoupon ? 0.6 : 1
+                      }}>
+                        {loadingCoupon ? '...' : 'Aplicar'}
+                      </button>
+                    </div>
+                    {couponError && <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.red, marginTop: '0.4rem' }}>{couponError}</div>}
+                    {couponSuccess && <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.green, marginTop: '0.4rem', fontWeight: 600 }}>Cupom aplicado! Baralho completo desbloqueado.</div>}
+                  </div>
+                )}
+
+                <div style={{ textAlign: 'center', fontFamily: BODY, fontSize: '0.65rem', color: C.inkMuted }}>
+                  compra única · disponível em todos seus dispositivos
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1864,10 +1840,102 @@ function ExampleScreen({ onClose }) {
   );
 }
 
+// ============ AGE GATE ============
+function AgeGate({ onConfirm, onDeny }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: C.bg,
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '2rem 1.4rem', maxWidth: '480px', margin: '0 auto',
+      textAlign: 'center'
+    }}>
+      <div style={{ fontSize: '3.5rem', marginBottom: '1.2rem', lineHeight: 1 }}>🔞</div>
+
+      <div style={{
+        fontFamily: TITLE, fontWeight: 900,
+        fontSize: 'clamp(1.6rem, 6vw, 2rem)',
+        color: C.ink, letterSpacing: '-0.03em',
+        lineHeight: 1.05, marginBottom: '0.8rem'
+      }}>
+        Conteúdo +18
+      </div>
+
+      <div style={{
+        fontFamily: BODY, fontSize: '0.9rem',
+        color: C.inkMuted, lineHeight: 1.6,
+        maxWidth: '300px', marginBottom: '2.5rem'
+      }}>
+        Este app contém perguntas de conteúdo adulto. Você confirma que tem 18 anos ou mais?
+      </div>
+
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+        <Btn onClick={onConfirm} color={C.bg} bg={C.ink} border={C.ink}>
+          Sim, tenho 18 anos ou mais
+        </Btn>
+        <Btn onClick={onDeny} color={C.inkMuted} border={C.border}>
+          Não, sou menor de idade
+        </Btn>
+      </div>
+
+      <div style={{
+        marginTop: '1.5rem', fontFamily: BODY,
+        fontSize: '0.62rem', color: C.inkMuted, lineHeight: 1.5,
+        maxWidth: '280px'
+      }}>
+        Ao continuar, você declara ter idade legal para acessar conteúdo adulto conforme a legislação do seu país.
+      </div>
+    </div>
+  );
+}
+
+// ============ TELA DE ACESSO NEGADO ============
+function AccessDenied() {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: C.bg,
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '2rem 1.4rem', maxWidth: '480px', margin: '0 auto',
+      textAlign: 'center'
+    }}>
+      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚫</div>
+      <div style={{
+        fontFamily: TITLE, fontWeight: 900, fontSize: '1.5rem',
+        color: C.ink, letterSpacing: '-0.03em', marginBottom: '0.7rem'
+      }}>
+        Acesso restrito
+      </div>
+      <div style={{
+        fontFamily: BODY, fontSize: '0.88rem',
+        color: C.inkMuted, lineHeight: 1.6, maxWidth: '280px'
+      }}>
+        Este app é exclusivo para maiores de 18 anos.
+      </div>
+    </div>
+  );
+}
+
 // ============ APP PRINCIPAL ============
 export default function App() {
   const { isPremium: isPremiumUnlocked } = useAuth();
-  const [stage, setStage] = useState('onboarding'); // onboarding, setupCount, setupNames, card, voteChoice, votePin, score, gameOver, deckEmpty, example
+
+  // Age gate — verifica localStorage
+  const [ageConfirmed, setAgeConfirmed] = useState(() => {
+    return localStorage.getItem('age_confirmed') === 'true';
+  });
+  const [ageDenied, setAgeDenied] = useState(false);
+
+  const handleAgeConfirm = () => {
+    localStorage.setItem('age_confirmed', 'true');
+    setAgeConfirmed(true);
+  };
+
+  const handleAgeDeny = () => {
+    setAgeDenied(true);
+  };
+
+  const [stage, setStage] = useState('onboarding');
   const [prevStage, setPrevStage] = useState(null);
   const [playerCount, setPlayerCount] = useState(4);
   const [selectedDeck, setSelectedDeck] = useState(DECK_PROIBIDAO);
@@ -2000,6 +2068,9 @@ export default function App() {
   const activeOrderIdx = players
     .slice(0, currentPlayerIdx + 1)
     .filter((_, i) => !skippedPlayers.includes(i)).length - 1;
+
+  if (ageDenied) return <AccessDenied />;
+  if (!ageConfirmed) return <AgeGate onConfirm={handleAgeConfirm} onDeny={handleAgeDeny} />;
 
   if (stage === 'onboarding') return <Onboarding onDone={() => setStage('setupCount')} />;
   if (stage === 'example') return <ExampleScreen onClose={closeExample} />;
