@@ -4,12 +4,29 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 const mpClient = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
 
+// Cache the db across warm Lambda invocations
+let db = null;
+
 function getDb() {
+  if (db) return db;
+
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (!raw) throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON não está configurado no ambiente');
+
+  let serviceAccount;
+  try {
+    serviceAccount = JSON.parse(raw);
+  } catch (e) {
+    throw new Error(`FIREBASE_SERVICE_ACCOUNT_JSON não é um JSON válido: ${e.message}`);
+  }
+
   const app =
     getApps().length > 0
       ? getApp()
-      : initializeApp({ credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)) });
-  return getFirestore(app);
+      : initializeApp({ credential: cert(serviceAccount) });
+
+  db = getFirestore(app);
+  return db;
 }
 
 export default async function handler(req, res) {
@@ -22,11 +39,23 @@ export default async function handler(req, res) {
   // Ignorar eventos que não sejam de pagamento
   if (type !== 'payment' || !data?.id) return res.status(200).end();
 
+  // Inicializar Admin SDK — retorna 500 para que o MP reenvie se a config está quebrada
+  let firestore;
+  try {
+    firestore = getDb();
+  } catch (err) {
+    console.error('[webhook] ERRO DE CONFIGURAÇÃO — Firebase Admin SDK não inicializado:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+
   try {
     const payment = new Payment(mpClient);
     const paymentData = await payment.get({ id: data.id });
 
-    if (paymentData.status !== 'approved') return res.status(200).end();
+    if (paymentData.status !== 'approved') {
+      console.log(`[webhook] pagamento ${data.id} ignorado — status: ${paymentData.status}`);
+      return res.status(200).end();
+    }
 
     const uid = paymentData.external_reference;
     if (!uid) {
@@ -35,10 +64,8 @@ export default async function handler(req, res) {
     }
 
     const deckId = 'proibidao';
-    const db = getDb();
 
-    // Atualiza users/{uid} com a compra (merge para não sobrescrever outros dados)
-    await db
+    await firestore
       .collection('users')
       .doc(uid)
       .set(
@@ -55,8 +82,7 @@ export default async function handler(req, res) {
         { merge: true }
       );
 
-    // Log de compra para o admin
-    await db
+    await firestore
       .collection('purchases')
       .doc(`${uid}_${deckId}`)
       .set(
@@ -73,8 +99,10 @@ export default async function handler(req, res) {
     console.log(`[webhook] compra registrada — uid: ${uid}, payment: ${paymentData.id}`);
     return res.status(200).end();
   } catch (err) {
-    console.error('[webhook] erro ao processar pagamento:', err);
-    // Retorna 200 para o MP não retentar indefinidamente para erros nossos
-    return res.status(200).end();
+    // Loga code + message para ver exatamente "PERMISSION_DENIED" ou outro erro do Firestore
+    console.error('[webhook] erro ao processar pagamento:', err.code ?? '', err.message);
+    // Retorna 500 para que o MP reenvie — o Admin SDK não deveria ter PERMISSION_DENIED
+    // com credenciais válidas; se estiver acontecendo, precisamos do retry para investigar
+    return res.status(500).json({ error: err.message });
   }
 }
