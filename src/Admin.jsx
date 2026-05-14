@@ -358,20 +358,34 @@ function AdminPanel({ user, onLogout }) {
                 )}
                 {users.map(u => {
                   const hasPremium = u.purchases && Object.keys(u.purchases).length > 0;
+                  const purchase = hasPremium ? Object.values(u.purchases)[0] : null;
+
+                  // Origem do premium
+                  const sourceLabel = () => {
+                    if (!purchase) return null;
+                    if (purchase.source === 'admin') return { label: '⚙️ Admin', color: C.blue };
+                    if (purchase.source === 'coupon') return { label: `🎟️ Cupom: ${purchase.couponCode || '—'}`, color: C.inkMuted };
+                    if (purchase.source === 'mercadopago') return { label: '💳 Pagamento', color: C.green };
+                    return { label: purchase.source, color: C.inkMuted };
+                  };
+                  const src = sourceLabel();
+
                   return (
                     <div key={u.id} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       flexWrap: 'wrap', gap: '0.5rem',
-                      padding: '0.8rem 0', borderBottom: `1px solid ${C.border}`
+                      padding: '0.9rem 0', borderBottom: `1px solid ${C.border}`
                     }}>
                       <div style={{ flex: 1, minWidth: '200px' }}>
                         <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: '0.85rem', color: C.ink }}>
                           {u.displayName || '—'}
                         </div>
                         <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.inkMuted }}>{u.email}</div>
-                        <div style={{ fontFamily: BODY, fontSize: '0.62rem', color: C.inkSoft, marginTop: '0.1rem' }}>
-                          uid: {u.id.slice(0, 16)}...
-                        </div>
+                        {hasPremium && src && (
+                          <div style={{ fontFamily: BODY, fontSize: '0.65rem', color: src.color, marginTop: '0.2rem', fontWeight: 600 }}>
+                            {src.label}
+                          </div>
+                        )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                         {hasPremium ? <Badge label="PREMIUM" color={C.green} /> : <Badge label="FREE" color={C.inkMuted} />}
