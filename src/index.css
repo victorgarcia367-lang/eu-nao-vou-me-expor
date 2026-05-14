@@ -54,6 +54,11 @@ body {
   margin: 0;
 }
 
+/* Impede zoom automático do iOS em inputs — font-size mínimo de 16px */
+input, textarea, select {
+  font-size: 16px;
+}
+
 #root {
   width: 1126px;
   max-width: 100%;

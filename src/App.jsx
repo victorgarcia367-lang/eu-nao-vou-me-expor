@@ -655,7 +655,7 @@ function SetupCount({ onNext, onTutorial }) {
                         style={{
                           flex: 1, background: '#111', border: `1px solid ${C.border}`,
                           borderRadius: '10px', padding: '0.65rem 0.9rem',
-                          color: C.ink, fontFamily: BODY, fontSize: '0.85rem',
+                          color: C.ink, fontFamily: BODY, fontSize: '16px',
                           outline: 'none', letterSpacing: '0.02em'
                         }}
                       />
@@ -1554,7 +1554,7 @@ function DeckEmpty({ deck, isPremium, onBuy, onHome }) {
                 style={{
                   flex: 1, background: '#111', border: `1px solid ${C.border}`,
                   borderRadius: '10px', padding: '0.65rem 0.9rem',
-                  color: C.ink, fontFamily: BODY, fontSize: '0.85rem', outline: 'none'
+                  color: C.ink, fontFamily: BODY, fontSize: '16px', outline: 'none'
                 }}
               />
               <button onClick={handleCoupon} disabled={loadingCoupon} style={{
