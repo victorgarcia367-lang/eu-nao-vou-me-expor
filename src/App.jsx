@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from './AuthContext';
 
 // ============ BARALHO PROIBIDÃO +18 ============
 // As 10 primeiras são grátis, o resto é premium
@@ -307,25 +308,32 @@ function Modal({ children, onClose }) {
 function SetupCount({ onNext, onTutorial }) {
   const [count, setCount] = useState(4);
   const [selectedDeck, setSelectedDeck] = useState(DECK_PROIBIDAO);
-  // isPremium: em produção viria do backend/localStorage após compra
-  const [isPremium, setIsPremium] = useState(false);
   const [showBuySheet, setShowBuySheet] = useState(false);
   const [couponInput, setCouponInput] = useState('');
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState(false);
+  const [loadingLogin, setLoadingLogin] = useState(false);
+  const [loadingCoupon, setLoadingCoupon] = useState(false);
 
-  // Cupons válidos (em produção ficam no backend)
-  const VALID_COUPONS = ['PROIBIDAO2024', 'AMIGO', 'BETA'];
+  const { user, isPremium, signInWithGoogle, redeemCoupon: redeemCouponFirebase } = useAuth();
 
-  const redeemCoupon = () => {
-    const code = couponInput.trim().toUpperCase();
-    if (VALID_COUPONS.includes(code)) {
-      setIsPremium(true);
+  const handleLogin = async () => {
+    setLoadingLogin(true);
+    try { await signInWithGoogle(); } catch (e) { /* usuário fechou popup */ } finally { setLoadingLogin(false); }
+  };
+
+  const handleCoupon = async () => {
+    if (!user) { setCouponError('Faça login primeiro para usar o cupom.'); return; }
+    setLoadingCoupon(true);
+    try {
+      await redeemCouponFirebase(couponInput.trim(), 'proibidao');
       setCouponSuccess(true);
       setCouponError('');
       setTimeout(() => setShowBuySheet(false), 1200);
-    } else {
-      setCouponError('Cupom inválido ou já utilizado.');
+    } catch (e) {
+      setCouponError(e.message);
+    } finally {
+      setLoadingCoupon(false);
     }
   };
 
@@ -333,7 +341,7 @@ function SetupCount({ onNext, onTutorial }) {
   const premiumCount = deck.totalCount - deck.freeCount;
 
   const cta = showBuySheet ? null : (
-    <Btn onClick={() => onNext(count, selectedDeck, isPremium)} color={C.bg} bg={C.ink} border={C.ink}>
+    <Btn onClick={() => onNext(count, selectedDeck)} color={C.bg} bg={C.ink} border={C.ink}>
       Continuar
     </Btn>
   );
@@ -585,6 +593,47 @@ function SetupCount({ onNext, onTutorial }) {
               </div>
             </button>
 
+            {/* Login Google se não estiver logado */}
+            {!user && (
+              <button
+                onClick={handleLogin}
+                disabled={loadingLogin}
+                style={{
+                  width: '100%', background: '#fff', border: 'none',
+                  borderRadius: `${R - 6}px`, padding: '0.85rem',
+                  cursor: loadingLogin ? 'not-allowed' : 'pointer',
+                  marginBottom: '0.7rem', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+                  opacity: loadingLogin ? 0.7 : 1
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.1l-6.2-5.2C29.3 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.4 4.3-4.4 5.7l6.2 5.2C36.9 40.1 44 35 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+                <span style={{ fontFamily: BODY, fontWeight: 700, fontSize: '0.9rem', color: '#222' }}>
+                  {loadingLogin ? 'Entrando...' : 'Entrar com Google'}
+                </span>
+              </button>
+            )}
+
+            {user && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                marginBottom: '0.7rem', padding: '0.5rem 0.7rem',
+                background: '#111', borderRadius: '10px', border: `1px solid ${C.border}`
+              }}>
+                <div style={{
+                  width: '28px', height: '28px', borderRadius: '50%',
+                  background: C.green, display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', fontSize: '0.7rem', color: '#000', fontWeight: 700, flexShrink: 0
+                }}>
+                  {user.displayName?.[0] || user.email?.[0] || '?'}
+                </div>
+                <div style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkMuted, overflow: 'hidden' }}>
+                  <div style={{ color: C.ink, fontWeight: 600, fontSize: '0.75rem' }}>{user.displayName || 'Logado'}</div>
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+                </div>
+              </div>
+            )}
+
             {/* Cupom */}
             <div style={{ marginBottom: '0.8rem' }}>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -600,15 +649,17 @@ function SetupCount({ onNext, onTutorial }) {
                   }}
                 />
                 <button
-                  onClick={redeemCoupon}
+                  onClick={handleCoupon}
+                  disabled={loadingCoupon}
                   style={{
                     background: 'transparent', border: `1px solid ${C.border}`,
                     borderRadius: '10px', padding: '0.65rem 1rem',
                     color: C.ink, fontFamily: BODY, fontSize: '0.8rem',
-                    fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap'
+                    fontWeight: 600, cursor: loadingCoupon ? 'not-allowed' : 'pointer',
+                    whiteSpace: 'nowrap', opacity: loadingCoupon ? 0.6 : 1
                   }}
                 >
-                  Aplicar
+                  {loadingCoupon ? '...' : 'Aplicar'}
                 </button>
               </div>
               {couponError && (
@@ -1271,17 +1322,28 @@ function DeckEmpty({ deck, isPremium, onBuy, onHome }) {
   const [couponInput, setCouponInput] = useState('');
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState(false);
+  const [loadingLogin, setLoadingLogin] = useState(false);
+  const [loadingCoupon, setLoadingCoupon] = useState(false);
 
-  const VALID_COUPONS = ['PROIBIDAO2024', 'AMIGO', 'BETA'];
+  const { user, signInWithGoogle, redeemCoupon: redeemCouponFirebase } = useAuth();
 
-  const redeemCoupon = () => {
-    const code = couponInput.trim().toUpperCase();
-    if (VALID_COUPONS.includes(code)) {
+  const handleLogin = async () => {
+    setLoadingLogin(true);
+    try { await signInWithGoogle(); } catch (e) { } finally { setLoadingLogin(false); }
+  };
+
+  const handleCoupon = async () => {
+    if (!user) { setCouponError('Faça login primeiro para usar o cupom.'); return; }
+    setLoadingCoupon(true);
+    try {
+      await redeemCouponFirebase(couponInput.trim(), 'proibidao');
       setCouponSuccess(true);
       setCouponError('');
       setTimeout(() => { setShowBuySheet(false); onBuy(); }, 1200);
-    } else {
-      setCouponError('Cupom inválido ou já utilizado.');
+    } catch (e) {
+      setCouponError(e.message);
+    } finally {
+      setLoadingCoupon(false);
     }
   };
 
@@ -1444,7 +1506,22 @@ function DeckEmpty({ deck, isPremium, onBuy, onHome }) {
               <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: '#1a3d00', marginTop: '0.1rem' }}>pix · cartão · em breve</div>
             </button>
 
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.8rem' }}>
+            {!user && (
+              <button onClick={handleLogin} disabled={loadingLogin} style={{
+                width: '100%', background: '#fff', border: 'none',
+                borderRadius: `${R - 6}px`, padding: '0.85rem',
+                cursor: loadingLogin ? 'not-allowed' : 'pointer',
+                marginBottom: '0.7rem', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+                opacity: loadingLogin ? 0.7 : 1
+              }}>
+                <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.1l-6.2-5.2C29.3 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.4 4.3-4.4 5.7l6.2 5.2C36.9 40.1 44 35 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+                <span style={{ fontFamily: BODY, fontWeight: 700, fontSize: '0.9rem', color: '#222' }}>
+                  {loadingLogin ? 'Entrando...' : 'Entrar com Google'}
+                </span>
+              </button>
+            )}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <input
                 value={couponInput}
                 onChange={e => { setCouponInput(e.target.value); setCouponError(''); }}
@@ -1455,13 +1532,14 @@ function DeckEmpty({ deck, isPremium, onBuy, onHome }) {
                   color: C.ink, fontFamily: BODY, fontSize: '0.85rem', outline: 'none'
                 }}
               />
-              <button onClick={redeemCoupon} style={{
+              <button onClick={handleCoupon} disabled={loadingCoupon} style={{
                 background: 'transparent', border: `1px solid ${C.border}`,
                 borderRadius: '10px', padding: '0.65rem 1rem',
                 color: C.ink, fontFamily: BODY, fontSize: '0.8rem',
-                fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap'
+                fontWeight: 600, cursor: loadingCoupon ? 'not-allowed' : 'pointer',
+                whiteSpace: 'nowrap', opacity: loadingCoupon ? 0.6 : 1
               }}>
-                Aplicar
+                {loadingCoupon ? '...' : 'Aplicar'}
               </button>
             </div>
             {couponError && <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.red, marginBottom: '0.4rem' }}>{couponError}</div>}
@@ -1788,11 +1866,11 @@ function ExampleScreen({ onClose }) {
 
 // ============ APP PRINCIPAL ============
 export default function App() {
+  const { isPremium: isPremiumUnlocked } = useAuth();
   const [stage, setStage] = useState('onboarding'); // onboarding, setupCount, setupNames, card, voteChoice, votePin, score, gameOver, deckEmpty, example
-  const [prevStage, setPrevStage] = useState(null); // para voltar do exemplo
+  const [prevStage, setPrevStage] = useState(null);
   const [playerCount, setPlayerCount] = useState(4);
   const [selectedDeck, setSelectedDeck] = useState(DECK_PROIBIDAO);
-  const [isPremiumUnlocked, setIsPremiumUnlocked] = useState(false);
 
   const goExample = () => { setPrevStage(stage); setStage('example'); };
   const closeExample = () => setStage(prevStage || 'setupCount');
@@ -1927,10 +2005,9 @@ export default function App() {
   if (stage === 'example') return <ExampleScreen onClose={closeExample} />;
   if (stage === 'setupCount') return (
     <SetupCount
-      onNext={(c, deck, isPremium) => {
+      onNext={(c, deck) => {
         setPlayerCount(c);
         setSelectedDeck(deck);
-        setIsPremiumUnlocked(isPremium);
         setStage('setupNames');
       }}
       onTutorial={() => { setPrevStage('setupCount'); setStage('onboarding'); }}
