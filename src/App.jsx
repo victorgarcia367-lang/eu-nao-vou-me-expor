@@ -314,12 +314,35 @@ function SetupCount({ onNext, onTutorial }) {
   const [couponSuccess, setCouponSuccess] = useState(false);
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [loadingCoupon, setLoadingCoupon] = useState(false);
+  const [loadingBuy, setLoadingBuy] = useState(false);
 
   const { user, isPremium, signInWithGoogle, redeemCoupon: redeemCouponFirebase } = useAuth();
 
   const handleLogin = async () => {
     setLoadingLogin(true);
     try { await signInWithGoogle(); } catch (e) { /* usuário fechou popup */ } finally { setLoadingLogin(false); }
+  };
+
+  const handleBuy = async () => {
+    if (!user) { await handleLogin(); return; }
+    setLoadingBuy(true);
+    try {
+      const res = await fetch('/api/create-preference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.uid }),
+      });
+      const data = await res.json();
+      if (data.init_point) {
+        window.location.href = data.init_point;
+      } else {
+        console.error('[handleBuy] sem init_point:', data);
+      }
+    } catch (e) {
+      console.error('[handleBuy] erro:', e);
+    } finally {
+      setLoadingBuy(false);
+    }
   };
 
   const handleCoupon = async () => {
@@ -586,11 +609,12 @@ function SetupCount({ onNext, onTutorial }) {
 
                 {/* Botão comprar */}
                 <button
-                  onClick={() => alert('Pagamento em breve! Use um cupom por enquanto.')}
-                  style={{ width: '100%', background: C.green, border: 'none', borderRadius: `${R - 6}px`, padding: '0.95rem', cursor: 'pointer', marginBottom: '0.8rem' }}
+                  onClick={handleBuy}
+                  disabled={loadingBuy}
+                  style={{ width: '100%', background: C.green, border: 'none', borderRadius: `${R - 6}px`, padding: '0.95rem', cursor: loadingBuy ? 'not-allowed' : 'pointer', marginBottom: '0.8rem', opacity: loadingBuy ? 0.7 : 1 }}
                 >
-                  <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1rem', color: '#000' }}>Comprar agora · {deck.price}</div>
-                  <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: '#1a3d00', marginTop: '0.1rem' }}>pix · cartão · em breve</div>
+                  <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1rem', color: '#000' }}>{loadingBuy ? 'Aguarde...' : `Comprar agora · ${deck.price}`}</div>
+                  <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: '#1a3d00', marginTop: '0.1rem' }}>pix · cartão · pagamento seguro</div>
                 </button>
 
                 {/* Login Google */}
@@ -1300,12 +1324,35 @@ function DeckEmpty({ deck, isPremium, onBuy, onHome }) {
   const [couponSuccess, setCouponSuccess] = useState(false);
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [loadingCoupon, setLoadingCoupon] = useState(false);
+  const [loadingBuy, setLoadingBuy] = useState(false);
 
   const { user, signInWithGoogle, redeemCoupon: redeemCouponFirebase } = useAuth();
 
   const handleLogin = async () => {
     setLoadingLogin(true);
     try { await signInWithGoogle(); } catch (e) { } finally { setLoadingLogin(false); }
+  };
+
+  const handleBuy = async () => {
+    if (!user) { await handleLogin(); return; }
+    setLoadingBuy(true);
+    try {
+      const res = await fetch('/api/create-preference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.uid }),
+      });
+      const data = await res.json();
+      if (data.init_point) {
+        window.location.href = data.init_point;
+      } else {
+        console.error('[handleBuy] sem init_point:', data);
+      }
+    } catch (e) {
+      console.error('[handleBuy] erro:', e);
+    } finally {
+      setLoadingBuy(false);
+    }
   };
 
   const handleCoupon = async () => {
@@ -1471,15 +1518,17 @@ function DeckEmpty({ deck, isPremium, onBuy, onHome }) {
             </div>
 
             <button
-              onClick={() => alert('Pagamento em breve! Use um cupom por enquanto.')}
+              onClick={handleBuy}
+              disabled={loadingBuy}
               style={{
                 width: '100%', background: C.green, border: 'none',
                 borderRadius: `${R - 6}px`, padding: '0.95rem',
-                cursor: 'pointer', marginBottom: '0.8rem'
+                cursor: loadingBuy ? 'not-allowed' : 'pointer', marginBottom: '0.8rem',
+                opacity: loadingBuy ? 0.7 : 1
               }}
             >
-              <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1rem', color: '#000' }}>Comprar agora · {deck.price}</div>
-              <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: '#1a3d00', marginTop: '0.1rem' }}>pix · cartão · em breve</div>
+              <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1rem', color: '#000' }}>{loadingBuy ? 'Aguarde...' : `Comprar agora · ${deck.price}`}</div>
+              <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: '#1a3d00', marginTop: '0.1rem' }}>pix · cartão · pagamento seguro</div>
             </button>
 
             {!user && (
@@ -1918,7 +1967,35 @@ function AccessDenied() {
 
 // ============ APP PRINCIPAL ============
 export default function App() {
-  const { isPremium: isPremiumUnlocked } = useAuth();
+  const { isPremium: isPremiumUnlocked, syncPremium, user } = useAuth();
+
+  // Detecta retorno da página de pagamento do Mercado Pago
+  const [paymentBanner, setPaymentBanner] = useState(null); // 'verifying' | 'success' | 'failed'
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ps = params.get('payment');
+    if (!ps) return;
+    window.history.replaceState({}, '', '/');
+    if (ps === 'success') setPaymentBanner('verifying');
+    if (ps === 'failure') {
+      setPaymentBanner('failed');
+      setTimeout(() => setPaymentBanner(null), 4000);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (paymentBanner !== 'verifying') return;
+    if (!user?.uid) return;
+    syncPremium(user.uid).then(() => {}).catch(() => {});
+  }, [paymentBanner, user]);
+
+  useEffect(() => {
+    if (paymentBanner === 'verifying' && isPremiumUnlocked) {
+      setPaymentBanner('success');
+      setTimeout(() => setPaymentBanner(null), 3500);
+    }
+  }, [isPremiumUnlocked, paymentBanner]);
 
   // Age gate — verifica localStorage
   const [ageConfirmed, setAgeConfirmed] = useState(() => {
@@ -2071,115 +2148,120 @@ export default function App() {
     .slice(0, currentPlayerIdx + 1)
     .filter((_, i) => !skippedPlayers.includes(i)).length - 1;
 
-  if (ageDenied) return <AccessDenied />;
-  if (!ageConfirmed) return <AgeGate onConfirm={handleAgeConfirm} onDeny={handleAgeDeny} />;
-
-  if (stage === 'onboarding') return <Onboarding onDone={() => {
-    localStorage.setItem('onboarding_done', 'true');
-    setStage('setupCount');
-  }} />;
-  if (stage === 'example') return <ExampleScreen onClose={closeExample} />;
-  if (stage === 'setupCount') return (
-    <SetupCount
-      onNext={(c, deck) => {
-        setPlayerCount(c);
-        setSelectedDeck(deck);
-        setStage('setupNames');
-      }}
-      onTutorial={() => { setPrevStage('setupCount'); setStage('onboarding'); }}
-    />
-  );
-  if (stage === 'setupNames') return (
-    <SetupNames
-      initialCount={playerCount}
-      onNext={(names) => startGame(names, selectedDeck, isPremiumUnlocked)}
-      onBack={() => setStage('setupCount')}
-    />
-  );
-  if (stage === 'card') return (
-    <CardReveal
-      question={currentCard}
-      round={round}
-      onHome={goHome}
-      onStart={() => setStage('voteChoice')}
-      onSkip={() => { if (deck.length === 0) { setStage('deckEmpty'); } else { drawCard(deck); } }}
-      onExample={goExample}
-    />
-  );
-  if (stage === 'voteChoice') return (
-    <PlayerVoteChoice
-      question={currentCard} round={round}
-      playerName={players[currentPlayerIdx]}
-      playerIndex={activeOrderIdx} totalPlayers={activeTotalForRound}
-      activePlayers={activeTotalForRound}
-      onChoose={handleChoose}
-      onHome={goHome}
-      onPlayerLeft={handlePlayerLeft}
-      onExample={goExample}
-    />
-  );
-  if (stage === 'votePin') return (
-    <PlayerVotePin
-      playerName={players[currentPlayerIdx]}
-      playerIndex={activeOrderIdx} totalPlayers={activeTotalForRound}
-      round={round}
-      onConfirm={handlePinConfirm}
-      onBack={() => { setPendingVote(null); setStage('voteChoice'); }}
-      onHome={goHome}
-      onPlayerLeft={handlePlayerLeft}
-      onExample={goExample}
-    />
-  );
-  if (stage === 'score') return (
-    <Scoreboard
-      question={currentCard} round={round}
-      players={players} votes={votes} skipped={skippedPlayers}
-      onNext={nextRound} onHome={goHome} onExample={goExample}
-    />
-  );
-  if (stage === 'deckEmpty') return (
-    <DeckEmpty
-      deck={selectedDeck}
-      isPremium={isPremiumUnlocked}
-      onBuy={() => {
-        setIsPremiumUnlocked(true);
-        const cards = selectedDeck.cards;
-        const d = shuffle(cards);
-        setCurrentCard(d[0]); setDeck(d.slice(1));
-        setRound(round + 1); setVotes([]);
-        setCurrentPlayerIdx(players.findIndex((_, i) => !skippedPlayers.includes(i)));
-        setStage('card');
-      }}
-      onHome={goHome}
-    />
-  );
-
-  if (stage === 'gameOver') return (
-    <div style={{
-      minHeight: '100vh', background: C.bg, display: 'flex',
-      flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '2rem 1.4rem', maxWidth: '480px', margin: '0 auto', textAlign: 'center'
-    }}>
-      <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🏁</div>
+  const screen = (() => {
+    if (ageDenied) return <AccessDenied />;
+    if (!ageConfirmed) return <AgeGate onConfirm={handleAgeConfirm} onDeny={handleAgeDeny} />;
+    if (stage === 'onboarding') return <Onboarding onDone={() => {
+      localStorage.setItem('onboarding_done', 'true');
+      setStage('setupCount');
+    }} />;
+    if (stage === 'example') return <ExampleScreen onClose={closeExample} />;
+    if (stage === 'setupCount') return (
+      <SetupCount
+        onNext={(c, deck) => { setPlayerCount(c); setSelectedDeck(deck); setStage('setupNames'); }}
+        onTutorial={() => { setPrevStage('setupCount'); setStage('onboarding'); }}
+      />
+    );
+    if (stage === 'setupNames') return (
+      <SetupNames
+        initialCount={playerCount}
+        onNext={(names) => startGame(names, selectedDeck, isPremiumUnlocked)}
+        onBack={() => setStage('setupCount')}
+      />
+    );
+    if (stage === 'card') return (
+      <CardReveal
+        question={currentCard} round={round}
+        onHome={goHome}
+        onStart={() => setStage('voteChoice')}
+        onSkip={() => { if (deck.length === 0) { setStage('deckEmpty'); } else { drawCard(deck); } }}
+        onExample={goExample}
+      />
+    );
+    if (stage === 'voteChoice') return (
+      <PlayerVoteChoice
+        question={currentCard} round={round}
+        playerName={players[currentPlayerIdx]}
+        playerIndex={activeOrderIdx} totalPlayers={activeTotalForRound}
+        activePlayers={activeTotalForRound}
+        onChoose={handleChoose} onHome={goHome}
+        onPlayerLeft={handlePlayerLeft} onExample={goExample}
+      />
+    );
+    if (stage === 'votePin') return (
+      <PlayerVotePin
+        playerName={players[currentPlayerIdx]}
+        playerIndex={activeOrderIdx} totalPlayers={activeTotalForRound}
+        round={round}
+        onConfirm={handlePinConfirm}
+        onBack={() => { setPendingVote(null); setStage('voteChoice'); }}
+        onHome={goHome} onPlayerLeft={handlePlayerLeft} onExample={goExample}
+      />
+    );
+    if (stage === 'score') return (
+      <Scoreboard
+        question={currentCard} round={round}
+        players={players} votes={votes} skipped={skippedPlayers}
+        onNext={nextRound} onHome={goHome} onExample={goExample}
+      />
+    );
+    if (stage === 'deckEmpty') return (
+      <DeckEmpty
+        deck={selectedDeck}
+        isPremium={isPremiumUnlocked}
+        onBuy={() => {
+          const cards = selectedDeck.cards;
+          const d = shuffle(cards);
+          setCurrentCard(d[0]); setDeck(d.slice(1));
+          setRound(round + 1); setVotes([]);
+          setCurrentPlayerIdx(players.findIndex((_, i) => !skippedPlayers.includes(i)));
+          setStage('card');
+        }}
+        onHome={goHome}
+      />
+    );
+    if (stage === 'gameOver') return (
       <div style={{
-        fontFamily: TITLE, fontWeight: 900, fontSize: '2rem',
-        color: C.ink, letterSpacing: '-0.03em', marginBottom: '0.6rem'
+        minHeight: '100vh', background: C.bg, display: 'flex',
+        flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: '2rem 1.4rem', maxWidth: '480px', margin: '0 auto', textAlign: 'center'
       }}>
-        Fim de jogo
+        <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🏁</div>
+        <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '2rem', color: C.ink, letterSpacing: '-0.03em', marginBottom: '0.6rem' }}>
+          Fim de jogo
+        </div>
+        <div style={{ fontFamily: BODY, fontSize: '0.9rem', color: C.inkMuted, lineHeight: 1.6, marginBottom: '2.5rem' }}>
+          O mínimo de jogadores é 3 e não há jogadores suficientes para continuar.
+        </div>
+        <div style={{ width: '100%' }}>
+          <Btn onClick={goHome} color={C.bg} bg={C.ink} border={C.ink}>Começar de novo</Btn>
+        </div>
       </div>
-      <div style={{
-        fontFamily: BODY, fontSize: '0.9rem', color: C.inkMuted,
-        lineHeight: 1.6, marginBottom: '2.5rem'
-      }}>
-        O mínimo de jogadores é 3 e não há jogadores suficientes para continuar.
-      </div>
-      <div style={{ width: '100%' }}>
-        <Btn onClick={goHome} color={C.bg} bg={C.ink} border={C.ink}>
-          Começar de novo
-        </Btn>
-      </div>
-    </div>
-  );
+    );
+    return null;
+  })();
 
-  return null;
+  const bannerStyle = {
+    verifying: { bg: '#111100', border: C.green, color: C.green, label: 'Verificando pagamento...' },
+    success:   { bg: '#001a00', border: C.green, color: C.green, label: 'Pagamento aprovado! Baralho desbloqueado.' },
+    failed:    { bg: '#1a0000', border: C.red,   color: C.red,   label: 'Pagamento não concluído.' },
+  }[paymentBanner];
+
+  return (
+    <>
+      {screen}
+      {paymentBanner && (
+        <div style={{
+          position: 'fixed', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 9999, background: bannerStyle.bg,
+          border: `1.5px solid ${bannerStyle.border}`, borderRadius: '100px',
+          padding: '0.7rem 1.5rem',
+          fontFamily: BODY, fontSize: '0.82rem', color: bannerStyle.color,
+          fontWeight: 600, whiteSpace: 'nowrap', boxShadow: '0 4px 24px rgba(0,0,0,0.6)',
+        }}>
+          {bannerStyle.label}
+        </div>
+      )}
+    </>
+  );
 }
