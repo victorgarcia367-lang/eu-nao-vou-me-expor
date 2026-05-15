@@ -36,6 +36,11 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // admin_logs/{logId} — log de ações administrativas
+    match /admin_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
     // coupons/{CODE} — cupons single-use anti-fraude
     match /coupons/{code} {
       // Usuário autenticado lê para validar; admin lista tudo
