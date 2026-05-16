@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import ReactDOM from 'react-dom';
 import { useAuth } from './AuthContext';
 
 // ============ BARALHO PROIBIDÃO +18 ============
@@ -537,9 +536,9 @@ function DeckBuySheet({ deck, onClose }) {
     } catch (e) { setCouponError(e.message); } finally { setLoadingCoupon(false); }
   };
 
-  return ReactDOM.createPortal(
+  return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); }} style={{ background: '#0c0c0c', borderRadius: `${R}px ${R}px 0 0`, border: `1.5px solid ${C.border}`, borderBottom: 'none', padding: '1.2rem 1.3rem 1.8rem', width: '100%', maxWidth: '480px', maxHeight: '88vh', overflowY: 'auto' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#0c0c0c', borderRadius: `${R}px ${R}px 0 0`, border: `1.5px solid ${C.border}`, borderBottom: 'none', padding: '1.2rem 1.3rem 1.8rem', width: '100%', maxWidth: '480px', maxHeight: '88vh', overflowY: 'auto' }}>
         <div style={{ width: '2rem', height: '3px', background: '#333', borderRadius: '2px', margin: '0 auto 1.2rem' }} />
 
         {/* Header */}
@@ -632,8 +631,7 @@ function DeckBuySheet({ deck, onClose }) {
           compra única · disponível em todos seus dispositivos
         </div>
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }
 
