@@ -3,14 +3,13 @@ import ReactDOM from 'react-dom';
 import { useAuth } from './AuthContext';
 
 // ============ BARALHO PROIBIDÃO +18 ============
-// As 10 primeiras são grátis, o resto é premium
 const DECK_PROIBIDAO = {
   id: 'proibidao',
   name: 'Proibidão +18',
   emoji: '🔥',
   description: 'Perguntas +18 pra grupos sem vergonha',
   accentColor: '#9fff3d',
-  freeCount: 10,
+  freeCount: 0,
   totalCount: 41,
   price: 'R$ 9,99',
   cards: [
@@ -92,7 +91,59 @@ const DECK_LOREM = {
   ]
 };
 
-const ALL_DECKS = [DECK_PROIBIDAO, DECK_LOREM];
+const DECK_ROLE = {
+  id: 'role',
+  name: 'Rolê',
+  emoji: '🍻',
+  description: 'Perguntas pra animar qualquer rolê',
+  accentColor: '#ffd43d',
+  freeCount: 0,
+  totalCount: 30,
+  price: 'R$ 9,99',
+  comingSoon: true,
+  cards: [],
+};
+
+const DECK_GELO = {
+  id: 'gelo',
+  name: 'Quebrando o Gelo',
+  emoji: '🤝',
+  description: 'Perfeito pra quem ainda não se conhece',
+  accentColor: '#3dffd4',
+  freeCount: 0,
+  totalCount: 30,
+  price: 'R$ 9,99',
+  comingSoon: true,
+  cards: [],
+};
+
+const DECK_ENGRACADOS = {
+  id: 'engracados',
+  name: 'Engraçados',
+  emoji: '😂',
+  description: 'Perguntas pra rir até chorar',
+  accentColor: '#ff9a3d',
+  freeCount: 0,
+  totalCount: 30,
+  price: 'R$ 9,99',
+  comingSoon: true,
+  cards: [],
+};
+
+const DECK_AVENTURA = {
+  id: 'aventura',
+  name: 'Aventura',
+  emoji: '🏕️',
+  description: 'Desafios e perguntas pra quem é corajoso',
+  accentColor: '#c87bff',
+  freeCount: 0,
+  totalCount: 30,
+  price: 'R$ 9,99',
+  comingSoon: true,
+  cards: [],
+};
+
+const ALL_DECKS = [DECK_PROIBIDAO, DECK_LOREM, DECK_ROLE, DECK_GELO, DECK_ENGRACADOS, DECK_AVENTURA];
 
 // ============ TOKENS ============
 const C = {
@@ -343,7 +394,7 @@ function Modal({ children, onClose }) {
 
 // ============ TELA: SELEÇÃO DE BARALHOS ============
 function DeckSelect({ onNext, onTutorial }) {
-  const [selected, setSelected] = useState(['proibidao']);
+  const [selected, setSelected] = useState([]);
   const [buyDeck, setBuyDeck] = useState(null);
   const { hasExtension } = useAuth();
 
@@ -351,21 +402,23 @@ function DeckSelect({ onNext, onTutorial }) {
 
   const toggle = (id) => {
     const deck = ALL_DECKS.find(d => d.id === id);
+    if (deck.comingSoon) return;
     if (deck.freeCount === 0 && !hasExt(deck)) { setBuyDeck(deck); return; }
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
   const selDecks = ALL_DECKS.filter(d => selected.includes(d.id));
-  const anyExt = selDecks.some(d => hasExt(d));
   const n = selDecks.length;
 
   let ctaLabel, ctaBg, ctaColor;
   if (n === 0) {
     ctaLabel = 'ESCOLHA UM BARALHO'; ctaBg = '#1a1a1a'; ctaColor = '#444';
   } else if (n === 1) {
-    ctaLabel = anyExt ? `JOGAR ${selDecks[0].name.toUpperCase()} →` : 'JOGAR VERSÃO GRÁTIS →';
-    ctaBg = selDecks[0].accentColor; ctaColor = '#000';
+    const d = selDecks[0];
+    ctaLabel = hasExt(d) ? `JOGAR ${d.name.toUpperCase()} →` : 'JOGAR VERSÃO GRÁTIS →';
+    ctaBg = d.accentColor; ctaColor = '#000';
   } else {
+    const anyExt = selDecks.some(d => hasExt(d));
     ctaLabel = anyExt ? `JOGAR COM ${n} BARALHOS →` : `JOGAR VERSÃO GRÁTIS (${n}) →`;
     ctaBg = `linear-gradient(90deg, ${selDecks[0].accentColor} 0%, ${selDecks[selDecks.length - 1].accentColor} 100%)`;
     ctaColor = '#000';
@@ -407,7 +460,41 @@ function DeckSelect({ onNext, onTutorial }) {
           const free = deck.freeCount > 0;
           const unlocked = free || ext;
           const accent = deck.accentColor;
-          const cardBg = isSelected ? (accent === C.green ? '#0f1a08' : '#0d0e1f') : '#0c0c0c';
+
+          if (deck.comingSoon) {
+            return (
+              <div key={deck.id} style={{
+                height: '180px', background: '#0c0c0c',
+                border: `2px solid ${C.border}`,
+                borderRadius: `${R - 4}px`, padding: '0.75rem',
+                cursor: 'default', opacity: 0.4,
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '1.6rem', lineHeight: 1 }}>{deck.emoji}</span>
+                  <span style={{
+                    background: '#1a1a1a', border: `1px solid ${C.border}`,
+                    borderRadius: '4px', padding: '0.1rem 0.4rem',
+                    fontFamily: BODY, fontSize: '0.5rem', color: C.inkMuted,
+                    fontWeight: 700, letterSpacing: '0.08em',
+                  }}>EM BREVE</span>
+                </div>
+                <div>
+                  <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '0.82rem', color: C.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: '0.25rem' }}>
+                    {deck.name}
+                  </div>
+                  <div style={{ fontFamily: BODY, fontSize: '0.6rem', color: '#666', lineHeight: 1.35 }}>
+                    {deck.description}
+                  </div>
+                </div>
+                <div style={{ fontFamily: BODY, fontSize: '0.6rem', color: C.inkSoft }}>{deck.totalCount} cartas · {deck.price}</div>
+              </div>
+            );
+          }
+
+          const cardBg = isSelected
+            ? (accent === C.green ? '#0f1a08' : accent === C.blue ? '#0d0e1f' : `${accent}12`)
+            : '#0c0c0c';
 
           return (
             <div key={deck.id} onClick={() => toggle(deck.id)} style={{
@@ -448,9 +535,11 @@ function DeckSelect({ onNext, onTutorial }) {
 
               {/* Rodapé: barra + ação */}
               <div onClick={e => e.stopPropagation()}>
-                <div style={{ height: '2px', background: '#1a1a1a', borderRadius: '1px', overflow: 'hidden', marginBottom: '0.4rem' }}>
-                  <div style={{ width: ext ? '100%' : `${(deck.freeCount / deck.totalCount) * 100}%`, height: '100%', background: unlocked ? accent : '#333', borderRadius: '1px' }} />
-                </div>
+                {free && (
+                  <div style={{ height: '2px', background: '#1a1a1a', borderRadius: '1px', overflow: 'hidden', marginBottom: '0.4rem' }}>
+                    <div style={{ width: ext ? '100%' : `${(deck.freeCount / deck.totalCount) * 100}%`, height: '100%', background: unlocked ? accent : '#333', borderRadius: '1px' }} />
+                  </div>
+                )}
                 {ext ? (
                   <div style={{ fontFamily: BODY, fontSize: '0.6rem', fontWeight: 700, color: accent }}>✓ completo</div>
                 ) : free ? (
@@ -495,6 +584,7 @@ function DeckBuySheet({ deck, onClose }) {
 
   const accent = deck.accentColor;
   const premiumCount = deck.totalCount - deck.freeCount;
+  const hasCards = deck.cards.length > 0;
   const sampleFree = deck.cards.slice(0, 1);
   const samplePremium = deck.cards.slice(deck.freeCount, deck.freeCount + 2);
   const samples = [...sampleFree, ...samplePremium];
@@ -556,29 +646,41 @@ function DeckBuySheet({ deck, onClose }) {
           <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.inkMuted }}>pagamento único · {deck.totalCount} cartas</div>
         </div>
 
-        {/* Exemplos — 1 card compacto */}
-        <div style={{ fontFamily: BODY, fontSize: '0.6rem', color: C.inkMuted, fontWeight: 700, letterSpacing: '0.12em', marginBottom: '0.5rem' }}>EXEMPLOS DO BARALHO</div>
-        <div style={{ background: '#111', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '0.6rem 0.8rem', marginBottom: '1rem' }}>
-          {samples.map((q, i) => {
-            const isPremiumQ = i > 0;
-            const text = typeof q === 'object' ? q.text : q;
-            return (
-              <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', paddingTop: i > 0 ? '0.45rem' : 0, marginTop: i > 0 ? '0.45rem' : 0, borderTop: i > 0 ? `1px solid ${C.border}` : 'none' }}>
-                <span style={{ fontSize: '0.65rem', flexShrink: 0 }}>{isPremiumQ ? '🔥' : '🆓'}</span>
-                <span style={{ fontFamily: BODY, fontSize: '0.75rem', color: isPremiumQ ? C.inkMuted : C.ink, lineHeight: 1.3, flex: 1 }}>{text}</span>
-              </div>
-            );
-          })}
-        </div>
+        {/* Exemplos — só se o deck tiver cartas */}
+        {hasCards ? (
+          <>
+            <div style={{ fontFamily: BODY, fontSize: '0.6rem', color: C.inkMuted, fontWeight: 700, letterSpacing: '0.12em', marginBottom: '0.5rem' }}>EXEMPLOS DO BARALHO</div>
+            <div style={{ background: '#111', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '0.6rem 0.8rem', marginBottom: '1rem' }}>
+              {samples.map((q, i) => {
+                const isPremiumQ = i > 0;
+                const text = typeof q === 'object' ? q.text : q;
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', paddingTop: i > 0 ? '0.45rem' : 0, marginTop: i > 0 ? '0.45rem' : 0, borderTop: i > 0 ? `1px solid ${C.border}` : 'none' }}>
+                    <span style={{ fontSize: '0.65rem', flexShrink: 0 }}>{isPremiumQ ? '🔥' : '🆓'}</span>
+                    <span style={{ fontFamily: BODY, fontSize: '0.75rem', color: isPremiumQ ? C.inkMuted : C.ink, lineHeight: 1.3, flex: 1 }}>{text}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div style={{ background: '#111', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '0.9rem', marginBottom: '1rem', textAlign: 'center' }}>
+            <div style={{ fontFamily: BODY, fontSize: '0.75rem', color: C.inkMuted, lineHeight: 1.5 }}>
+              Baralho completo com {deck.totalCount} cartas. Em breve disponível para compra.
+            </div>
+          </div>
+        )}
 
         {/* Resumo */}
         <div style={{ background: '#111', border: `1px solid ${C.border}`, borderRadius: `${R - 6}px`, padding: '0.75rem 1rem', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-            <span style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkSoft }}>{deck.freeCount} cartas grátis</span>
-            <span style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.green, fontWeight: 700 }}>incluso</span>
-          </div>
+          {deck.freeCount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+              <span style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkSoft }}>{deck.freeCount} cartas grátis</span>
+              <span style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.green, fontWeight: 700 }}>incluso</span>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
-            <span style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkSoft }}>{premiumCount} cartas premium</span>
+            <span style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkSoft }}>{premiumCount} cartas</span>
             <span style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.ink, fontWeight: 700 }}>desbloqueadas</span>
           </div>
           <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
