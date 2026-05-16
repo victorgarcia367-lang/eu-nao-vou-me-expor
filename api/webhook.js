@@ -57,13 +57,21 @@ export default async function handler(req, res) {
       return res.status(200).end();
     }
 
-    const uid = paymentData.external_reference;
-    if (!uid) {
+    const externalRef = paymentData.external_reference;
+    if (!externalRef) {
       console.error('[webhook] pagamento aprovado sem external_reference:', data.id);
       return res.status(200).end();
     }
 
-    const deckId = 'proibidao';
+    // Suporte a formato legado (só uid) e novo formato (uid|deckId)
+    const parts = externalRef.split('|');
+    const uid = parts[0];
+    const deckId = parts[1] || 'proibidao';
+
+    if (!uid) {
+      console.error('[webhook] external_reference sem uid válido:', externalRef);
+      return res.status(200).end();
+    }
 
     await firestore
       .collection('users')
@@ -96,13 +104,10 @@ export default async function handler(req, res) {
         { merge: true }
       );
 
-    console.log(`[webhook] compra registrada — uid: ${uid}, payment: ${paymentData.id}`);
+    console.log(`[webhook] compra registrada — uid: ${uid}, deckId: ${deckId}, payment: ${paymentData.id}`);
     return res.status(200).end();
   } catch (err) {
-    // Loga code + message para ver exatamente "PERMISSION_DENIED" ou outro erro do Firestore
     console.error('[webhook] erro ao processar pagamento:', err.code ?? '', err.message);
-    // Retorna 500 para que o MP reenvie — o Admin SDK não deveria ter PERMISSION_DENIED
-    // com credenciais válidas; se estiver acontecendo, precisamos do retry para investigar
     return res.status(500).json({ error: err.message });
   }
 }

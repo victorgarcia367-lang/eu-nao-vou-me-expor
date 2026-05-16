@@ -11,30 +11,33 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined);
-  const [isPremium, setIsPremium] = useState(false);
-  const [loadingPremium, setLoadingPremium] = useState(false);
+  const [extensions, setExtensions] = useState({});
+  const [loadingExtensions, setLoadingExtensions] = useState(true);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        await syncPremium(firebaseUser.uid);
+        await syncExtensions(firebaseUser.uid);
       } else {
-        setIsPremium(false);
+        setExtensions({});
+        setLoadingExtensions(false);
       }
     });
     return unsub;
   }, []);
 
-  const syncPremium = async (uid) => {
-    setLoadingPremium(true);
+  const syncExtensions = async (uid) => {
+    setLoadingExtensions(true);
     try {
       const ref = doc(db, 'users', uid);
       const snap = await getDoc(ref);
       if (snap.exists()) {
         const data = snap.data();
-        const hasPremium = data.purchases && Object.keys(data.purchases).length > 0;
-        setIsPremium(hasPremium);
+        const purchases = data.purchases || {};
+        const exts = {};
+        Object.keys(purchases).forEach(deckId => { exts[deckId] = true; });
+        setExtensions(exts);
       } else {
         await setDoc(ref, {
           uid,
@@ -44,15 +47,17 @@ export function AuthProvider({ children }) {
           createdAt: serverTimestamp(),
           purchases: {},
         });
-        setIsPremium(false);
+        setExtensions({});
       }
     } catch (err) {
-      console.error('Erro ao sincronizar premium:', err);
-      setIsPremium(false);
+      console.error('Erro ao sincronizar extensões:', err);
+      setExtensions({});
     } finally {
-      setLoadingPremium(false);
+      setLoadingExtensions(false);
     }
   };
+
+  const hasExtension = (deckId) => !!extensions[deckId];
 
   const signInWithGoogle = async () => {
     try {
@@ -66,7 +71,7 @@ export function AuthProvider({ children }) {
 
   const signOut = async () => {
     await firebaseSignOut(auth);
-    setIsPremium(false);
+    setExtensions({});
   };
 
   const registerPurchase = async (deckId, source, couponCode = null) => {
@@ -81,7 +86,7 @@ export function AuthProvider({ children }) {
     await setDoc(ref, { purchases: { [deckId]: purchase } }, { merge: true });
     const purchaseRef = doc(db, 'purchases', `${user.uid}_${deckId}`);
     await setDoc(purchaseRef, { uid: user.uid, email: user.email, ...purchase });
-    setIsPremium(true);
+    setExtensions(prev => ({ ...prev, [deckId]: true }));
   };
 
   const redeemCoupon = async (code, deckId) => {
@@ -98,13 +103,14 @@ export function AuthProvider({ children }) {
 
   const value = {
     user,
-    isPremium,
-    loadingPremium,
+    extensions,
+    loadingExtensions,
+    hasExtension,
     signInWithGoogle,
     signOut,
     registerPurchase,
     redeemCoupon,
-    syncPremium,
+    syncExtensions,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

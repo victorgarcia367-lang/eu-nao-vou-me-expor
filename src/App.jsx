@@ -345,14 +345,13 @@ function Modal({ children, onClose }) {
 function DeckSelect({ onNext, onTutorial }) {
   const [selected, setSelected] = useState(['proibidao']);
   const [buyDeck, setBuyDeck] = useState(null);
-  const { isPremium } = useAuth();
+  const { hasExtension } = useAuth();
 
-  const hasExt = (deck) => deck.id === 'proibidao' ? isPremium : false;
-  const isFree = (deck) => deck.id === 'proibidao';
+  const hasExt = (deck) => hasExtension(deck.id);
 
   const toggle = (id) => {
     const deck = ALL_DECKS.find(d => d.id === id);
-    if (!isFree(deck) && !hasExt(deck)) { setBuyDeck(deck); return; }
+    if (deck.freeCount === 0 && !hasExt(deck)) { setBuyDeck(deck); return; }
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
@@ -405,7 +404,7 @@ function DeckSelect({ onNext, onTutorial }) {
         {ALL_DECKS.map(deck => {
           const isSelected = selected.includes(deck.id);
           const ext = hasExt(deck);
-          const free = isFree(deck);
+          const free = deck.freeCount > 0;
           const unlocked = free || ext;
           const accent = deck.accentColor;
           const cardBg = isSelected ? (accent === C.green ? '#0f1a08' : '#0d0e1f') : '#0c0c0c';
@@ -1325,7 +1324,9 @@ function Scoreboard({ question, round, players, votes, skipped, onNext, onHome, 
 }
 
 // ============ TELA: BARALHO ESGOTADO ============
-function DeckEmpty({ deck, isPremium, onBuy, onHome }) {
+function DeckEmpty({ deck, onBuy, onHome }) {
+  const { hasExtension, user, signInWithGoogle, redeemCoupon: redeemCouponFirebase } = useAuth();
+  const isPremium = hasExtension(deck.id);
   const [showBuySheet, setShowBuySheet] = useState(false);
   const [couponInput, setCouponInput] = useState('');
   const [couponError, setCouponError] = useState('');
@@ -1333,8 +1334,6 @@ function DeckEmpty({ deck, isPremium, onBuy, onHome }) {
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [loadingCoupon, setLoadingCoupon] = useState(false);
   const [loadingBuy, setLoadingBuy] = useState(false);
-
-  const { user, signInWithGoogle, redeemCoupon: redeemCouponFirebase } = useAuth();
 
   const handleLogin = async () => {
     setLoadingLogin(true);
@@ -1348,7 +1347,7 @@ function DeckEmpty({ deck, isPremium, onBuy, onHome }) {
       const res = await fetch('/api/create-preference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid: user.uid }),
+        body: JSON.stringify({ uid: user.uid, deckId: deck.id }),
       });
       const data = await res.json();
       if (data.init_point) {
@@ -1367,7 +1366,7 @@ function DeckEmpty({ deck, isPremium, onBuy, onHome }) {
     if (!user) { setCouponError('Faça login primeiro para usar o cupom.'); return; }
     setLoadingCoupon(true);
     try {
-      await redeemCouponFirebase(couponInput.trim(), 'proibidao');
+      await redeemCouponFirebase(couponInput.trim(), deck.id);
       setCouponSuccess(true);
       setCouponError('');
       setTimeout(() => { setShowBuySheet(false); onBuy(); }, 1200);
@@ -1975,7 +1974,7 @@ function AccessDenied() {
 
 // ============ APP PRINCIPAL ============
 export default function App() {
-  const { isPremium: isPremiumUnlocked, syncPremium, user } = useAuth();
+  const { extensions, hasExtension, syncExtensions, user } = useAuth();
 
   // Detecta retorno da página de pagamento do Mercado Pago
   const [paymentBanner, setPaymentBanner] = useState(null); // 'verifying' | 'success' | 'failed'
@@ -1995,15 +1994,15 @@ export default function App() {
   useEffect(() => {
     if (paymentBanner !== 'verifying') return;
     if (!user?.uid) return;
-    syncPremium(user.uid).then(() => {}).catch(() => {});
+    syncExtensions(user.uid).then(() => {}).catch(() => {});
   }, [paymentBanner, user]);
 
   useEffect(() => {
-    if (paymentBanner === 'verifying' && isPremiumUnlocked) {
+    if (paymentBanner === 'verifying' && Object.keys(extensions).length > 0) {
       setPaymentBanner('success');
       setTimeout(() => setPaymentBanner(null), 3500);
     }
-  }, [isPremiumUnlocked, paymentBanner]);
+  }, [extensions, paymentBanner]);
 
   // Age gate — verifica localStorage
   const [ageConfirmed, setAgeConfirmed] = useState(() => {
@@ -2083,7 +2082,7 @@ export default function App() {
     deckIds.forEach(deckId => {
       const d = ALL_DECKS.find(x => x.id === deckId);
       if (!d) return;
-      const hasExt = deckId === 'proibidao' ? isPremiumUnlocked : false;
+      const hasExt = hasExtension(deckId);
       const cards = hasExt ? d.cards : d.cards.slice(0, d.freeCount);
       cards.forEach(text => allCards.push({ text, deckId, deckEmoji: d.emoji, deckAccent: d.accentColor }));
     });
@@ -2235,13 +2234,12 @@ export default function App() {
     if (stage === 'deckEmpty') return (
       <DeckEmpty
         deck={selectedDeckIds.map(id => ALL_DECKS.find(d => d.id === id)).filter(Boolean)[0] || DECK_PROIBIDAO}
-        isPremium={isPremiumUnlocked}
         onBuy={() => {
           const allCards = [];
           selectedDeckIds.forEach(deckId => {
             const d = ALL_DECKS.find(x => x.id === deckId);
             if (!d) return;
-            const hasExt = deckId === 'proibidao' ? isPremiumUnlocked : false;
+            const hasExt = hasExtension(deckId);
             const cards = hasExt ? d.cards : d.cards.slice(0, d.freeCount);
             cards.forEach(text => allCards.push({ text, deckId, deckEmoji: d.emoji, deckAccent: d.accentColor }));
           });
@@ -2277,7 +2275,7 @@ export default function App() {
 
   const bannerStyle = {
     verifying: { bg: '#111100', border: C.green, color: C.green, label: 'Verificando pagamento...' },
-    success:   { bg: '#001a00', border: C.green, color: C.green, label: 'Pagamento aprovado! Baralho desbloqueado.' },
+    success:   { bg: '#001a00', border: C.green, color: C.green, label: 'Baralho desbloqueado!' },
     failed:    { bg: '#1a0000', border: C.red,   color: C.red,   label: 'Pagamento não concluído.' },
   }[paymentBanner];
 

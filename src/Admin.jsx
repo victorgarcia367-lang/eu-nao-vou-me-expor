@@ -11,6 +11,11 @@ import { db } from './firebase';
 const ADMIN_EMAIL = 'victorgarcia367@gmail.com';
 const USERS_PER_PAGE = 20;
 
+const ADMIN_DECKS = [
+  { id: 'proibidao', name: 'Proibidão +18', emoji: '🔥', price: 9.99 },
+  { id: 'lorem',     name: 'Lorem Ipsum',   emoji: '🎲', price: 7.99 },
+];
+
 const C = {
   bg: '#000000', card: '#0c0c0c', ink: '#ffffff',
   inkMuted: '#aaaaaa', inkSoft: '#888888', border: '#2e2e2e',
@@ -75,6 +80,8 @@ function SectionTitle({ children }) {
 
 function actionLabel(action) {
   const MAP = {
+    grant_extension: '✅ Extensão concedida',
+    revoke_extension: '❌ Extensão removida',
     grant_premium: '✅ Premium concedido',
     revoke_premium: '❌ Premium removido',
     create_coupon: '🎟️ Cupom criado',
@@ -220,22 +227,30 @@ function AdminPanel({ user, onLogout }) {
 
   // ── Métricas ───────────────────────────────────────────
   const totalUsers = users.length;
-  const premiumUsers = users.filter(u => u.purchases && Object.keys(u.purchases).length > 0).length;
+  const usersWithExtension = users.filter(u => u.purchases && Object.keys(u.purchases).length > 0).length;
   const totalCoupons = coupons.length;
   const usedCoupons = coupons.filter(c => c.usedBy).length;
-  const payingCount = users.filter(u => {
-    const p = u.purchases && Object.values(u.purchases)[0];
-    return p?.source === 'mercadopago' || p?.source === 'payment';
-  }).length;
-  const estimatedRevenue = (payingCount * 9.99).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  const deckStats = ADMIN_DECKS.map(deck => {
+    const count = users.filter(u => u.purchases?.[deck.id]).length;
+    const revenue = users.reduce((acc, u) => {
+      const p = u.purchases?.[deck.id];
+      if (p?.source === 'mercadopago' || p?.source === 'payment') return acc + deck.price;
+      return acc;
+    }, 0);
+    return { ...deck, count, revenue };
+  });
+
+  const estimatedRevenue = deckStats.reduce((acc, d) => acc + d.revenue, 0)
+    .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   // ── Usuários filtrados / ordenados / paginados ─────────
   const filteredUsers = users.filter(u => {
     if (searchQuery && !(u.email || '').toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    const hasPremium = u.purchases && Object.keys(u.purchases).length > 0;
-    if (statusFilter === 'premium') return hasPremium;
-    if (statusFilter === 'free') return !hasPremium;
-    if (statusFilter === 'coupon') return u.purchases?.proibidao?.source === 'coupon';
+    const hasAnyExtension = u.purchases && Object.keys(u.purchases).length > 0;
+    if (statusFilter === 'premium') return hasAnyExtension;
+    if (statusFilter === 'free') return !hasAnyExtension;
+    if (statusFilter === 'coupon') return Object.values(u.purchases || {}).some(p => p?.source === 'coupon');
     return true;
   });
 
@@ -268,19 +283,23 @@ function AdminPanel({ user, onLogout }) {
   const paginatedUsers = sortedUsers.slice((currentPage - 1) * USERS_PER_PAGE, currentPage * USERS_PER_PAGE);
 
   // ── Ações ──────────────────────────────────────────────
-  const togglePremium = async (u) => {
-    const hasPremium = u.purchases && Object.keys(u.purchases).length > 0;
+  const grantExtension = async (u, deckId) => {
     const ref = doc(db, 'users', u.id);
-    if (hasPremium) {
-      await updateDoc(ref, { purchases: {} });
-    } else {
-      await setDoc(ref, {
-        purchases: {
-          proibidao: { deckId: 'proibidao', source: 'admin', couponCode: null, purchasedAt: serverTimestamp() },
-        },
-      }, { merge: true });
-    }
-    await logAction(hasPremium ? 'revoke_premium' : 'grant_premium', u.id);
+    await setDoc(ref, {
+      purchases: {
+        [deckId]: { deckId, source: 'admin', couponCode: null, purchasedAt: serverTimestamp() },
+      },
+    }, { merge: true });
+    await logAction('grant_extension', `${u.id} → ${deckId}`);
+    fetchAll();
+  };
+
+  const revokeExtension = async (u, deckId) => {
+    const ref = doc(db, 'users', u.id);
+    const newPurchases = { ...(u.purchases || {}) };
+    delete newPurchases[deckId];
+    await updateDoc(ref, { purchases: newPurchases });
+    await logAction('revoke_extension', `${u.id} → ${deckId}`);
     fetchAll();
   };
 
@@ -443,7 +462,8 @@ function AdminPanel({ user, onLogout }) {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                   {[
                     { label: 'Usuários cadastrados', value: totalUsers, color: C.blue, big: true },
-                    { label: 'Usuários premium', value: premiumUsers, color: C.green, big: true },
+                    { label: 'Com extensão', value: usersWithExtension, color: C.green, big: true },
+                    ...deckStats.map(d => ({ label: `${d.emoji} ${d.name}`, value: d.count, color: C.ink, big: true })),
                     { label: 'Cupons criados', value: totalCoupons, color: C.ink, big: true },
                     { label: 'Cupons utilizados', value: usedCoupons, color: C.red, big: true },
                     { label: 'Receita estimada', value: estimatedRevenue, color: C.green, big: false },
@@ -462,22 +482,31 @@ function AdminPanel({ user, onLogout }) {
                 {/* Últimos usuários */}
                 <Card>
                   <SectionTitle>ÚLTIMOS USUÁRIOS</SectionTitle>
-                  {users.slice(0, 5).map(u => (
-                    <div key={u.id} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '0.6rem 0', borderBottom: `1px solid ${C.border}`,
-                    }}>
-                      <div>
-                        <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: '0.85rem', color: C.ink }}>
-                          {u.displayName || u.email || u.id.slice(0, 10)}
+                  {users.slice(0, 5).map(u => {
+                    const purchases = u.purchases || {};
+                    const extKeys = Object.keys(purchases);
+                    return (
+                      <div key={u.id} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '0.6rem 0', borderBottom: `1px solid ${C.border}`,
+                      }}>
+                        <div>
+                          <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: '0.85rem', color: C.ink }}>
+                            {u.displayName || u.email || u.id.slice(0, 10)}
+                          </div>
+                          <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.inkMuted }}>{u.email}</div>
                         </div>
-                        <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.inkMuted }}>{u.email}</div>
+                        <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          {extKeys.length === 0
+                            ? <Badge label="FREE" color={C.inkMuted} />
+                            : extKeys.map(id => {
+                                const deck = ADMIN_DECKS.find(d => d.id === id);
+                                return <Badge key={id} label={deck ? `${deck.emoji} ${deck.name}` : id} color={C.green} />;
+                              })}
+                        </div>
                       </div>
-                      {u.purchases && Object.keys(u.purchases).length > 0
-                        ? <Badge label="PREMIUM" color={C.green} />
-                        : <Badge label="FREE" color={C.inkMuted} />}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </Card>
 
                 {/* Log de ações */}
@@ -564,62 +593,92 @@ function AdminPanel({ user, onLogout }) {
                   )}
 
                   {paginatedUsers.map(u => {
-                    const hasPremium = u.purchases && Object.keys(u.purchases).length > 0;
-                    const purchase = hasPremium ? Object.values(u.purchases)[0] : null;
+                    const purchases = u.purchases || {};
+                    const hasAnyExt = Object.keys(purchases).length > 0;
                     const isNew = u.createdAt?.toDate && (Date.now() - u.createdAt.toDate().getTime() < 86_400_000);
-
-                    const src = (() => {
-                      if (!purchase) return null;
-                      if (purchase.source === 'admin') return { label: '⚙️ Admin', color: C.blue };
-                      if (purchase.source === 'coupon') return { label: `🎟️ Cupom: ${purchase.couponCode || '—'}`, color: C.inkMuted };
-                      if (purchase.source === 'mercadopago') return { label: '💳 Pagamento', color: C.green };
-                      return { label: purchase.source, color: C.inkMuted };
-                    })();
 
                     return (
                       <div key={u.id} style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        flexWrap: 'wrap', gap: '0.5rem',
                         padding: '0.9rem 0', borderBottom: `1px solid ${C.border}`,
                       }}>
-                        <div style={{ flex: 1, minWidth: '200px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: '0.85rem', color: C.ink }}>
-                              {u.displayName || '—'}
-                            </span>
-                            {isNew && (
-                              <span style={{
-                                background: `${C.green}22`, border: `1px solid ${C.green}55`,
-                                borderRadius: '100px', padding: '0.1rem 0.45rem',
-                                fontFamily: BODY, fontSize: '0.55rem', color: C.green, fontWeight: 700,
-                              }}>
-                                NOVO
+                        {/* Linha superior: nome + email + data */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <div style={{ flex: 1, minWidth: '180px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                              <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: '0.85rem', color: C.ink }}>
+                                {u.displayName || '—'}
                               </span>
+                              {isNew && (
+                                <span style={{
+                                  background: `${C.green}22`, border: `1px solid ${C.green}55`,
+                                  borderRadius: '100px', padding: '0.1rem 0.45rem',
+                                  fontFamily: BODY, fontSize: '0.55rem', color: C.green, fontWeight: 700,
+                                }}>
+                                  NOVO
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.inkMuted }}>{u.email}</div>
+                            {u.createdAt?.toDate && (
+                              <div style={{ fontFamily: BODY, fontSize: '0.62rem', color: C.inkSoft, marginTop: '0.1rem' }}>
+                                {u.createdAt.toDate().toLocaleDateString('pt-BR')}
+                              </div>
                             )}
                           </div>
-                          <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.inkMuted }}>{u.email}</div>
-                          {u.createdAt?.toDate && (
-                            <div style={{ fontFamily: BODY, fontSize: '0.62rem', color: C.inkSoft, marginTop: '0.1rem' }}>
-                              {u.createdAt.toDate().toLocaleDateString('pt-BR')}
-                            </div>
-                          )}
-                          {hasPremium && src && (
-                            <div style={{ fontFamily: BODY, fontSize: '0.65rem', color: src.color, marginTop: '0.2rem', fontWeight: 600 }}>
-                              {src.label}
-                            </div>
-                          )}
+                          {/* Badge geral */}
+                          {hasAnyExt
+                            ? <Badge label="COM EXTENSÃO" color={C.green} />
+                            : <Badge label="FREE" color={C.inkMuted} />}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                          {hasPremium ? <Badge label="PREMIUM" color={C.green} /> : <Badge label="FREE" color={C.inkMuted} />}
-                          <Btn
-                            onClick={() => togglePremium(u)}
-                            bg={hasPremium ? C.red : C.green}
-                            color="#000"
-                            border={hasPremium ? C.red : C.green}
-                            small
-                          >
-                            {hasPremium ? 'Remover premium' : 'Dar premium'}
-                          </Btn>
+
+                        {/* Extensões: badges + botões por deck */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+                          {ADMIN_DECKS.map(deck => {
+                            const p = purchases[deck.id];
+                            if (p) {
+                              const srcLabel = p.source === 'admin'
+                                ? '⚙️ Admin'
+                                : p.source === 'coupon'
+                                  ? `🎟️ ${p.couponCode || 'cupom'}`
+                                  : '💳 MP';
+                              return (
+                                <div key={deck.id} style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                  <span style={{
+                                    background: `${C.green}18`, border: `1px solid ${C.green}44`,
+                                    borderRadius: '100px', padding: '0.15rem 0.55rem',
+                                    fontFamily: BODY, fontSize: '0.6rem', color: C.green, fontWeight: 700,
+                                  }}>
+                                    {deck.emoji} {deck.name}
+                                  </span>
+                                  <span style={{ fontFamily: BODY, fontSize: '0.55rem', color: C.inkSoft }}>{srcLabel}</span>
+                                  <button
+                                    onClick={() => revokeExtension(u, deck.id)}
+                                    title={`Remover ${deck.name}`}
+                                    style={{
+                                      background: 'transparent', border: `1px solid ${C.red}55`,
+                                      borderRadius: '4px', padding: '0.1rem 0.3rem',
+                                      color: C.red, cursor: 'pointer',
+                                      fontFamily: BODY, fontSize: '0.6rem', fontWeight: 700, lineHeight: 1,
+                                    }}
+                                  >✕</button>
+                                </div>
+                              );
+                            }
+                            return (
+                              <button
+                                key={deck.id}
+                                onClick={() => grantExtension(u, deck.id)}
+                                style={{
+                                  background: 'transparent', border: `1px solid ${C.border}`,
+                                  borderRadius: '100px', padding: '0.15rem 0.55rem',
+                                  color: C.inkMuted, cursor: 'pointer',
+                                  fontFamily: BODY, fontSize: '0.6rem', fontWeight: 600,
+                                }}
+                              >
+                                ＋ {deck.emoji} {deck.name}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     );

@@ -2,12 +2,23 @@ import { MercadoPagoConfig, Preference } from 'mercadopago';
 
 const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
 
+const DECKS = {
+  proibidao: {
+    title: 'Baralho Proibidão — Eu Não Vou Me Expor',
+    price: 9.99,
+  },
+  lorem: {
+    title: 'Baralho Lorem Ipsum — Eu Não Vou Me Expor',
+    price: 7.99,
+  },
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { uid } = req.body;
+  const { uid, deckId = 'proibidao' } = req.body;
   if (!uid) {
     return res.status(400).json({ error: 'uid obrigatório' });
   }
@@ -17,20 +28,23 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'APP_URL não configurada' });
   }
 
+  const deckInfo = DECKS[deckId] || DECKS['proibidao'];
+  const resolvedDeckId = DECKS[deckId] ? deckId : 'proibidao';
+
   try {
     const preference = new Preference(client);
     const result = await preference.create({
       body: {
         items: [
           {
-            id: 'proibidao',
-            title: 'Baralho Proibidão — Eu Não Vou Me Expor',
+            id: resolvedDeckId,
+            title: deckInfo.title,
             quantity: 1,
-            unit_price: 9.99,
+            unit_price: deckInfo.price,
             currency_id: 'BRL',
           },
         ],
-        external_reference: uid,
+        external_reference: `${uid}|${resolvedDeckId}`,
         notification_url: `${appUrl}/api/webhook`,
         back_urls: {
           success: `${appUrl}/?payment=success`,
