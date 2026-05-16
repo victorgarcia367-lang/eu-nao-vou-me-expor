@@ -6,9 +6,6 @@ import { useAuth } from './AuthContext';
 const DECK_PROIBIDAO = {
   id: 'proibidao',
   name: 'Proibidão +18',
-  emoji: '🔥',
-  description: 'Perguntas +18 pra grupos sem vergonha',
-  accentColor: '#9fff3d',
   freeCount: 10,
   totalCount: 41,
   price: 'R$ 9,99',
@@ -58,40 +55,7 @@ const DECK_PROIBIDAO = {
   ]
 };
 
-const DECK_LOREM = {
-  id: 'lorem',
-  name: 'Lorem Ipsum',
-  emoji: '🎲',
-  description: 'Perguntas do cotidiano e comportamento',
-  accentColor: '#7b87ff',
-  freeCount: 5,
-  totalCount: 20,
-  price: 'R$ 7,99',
-  cards: [
-    "Quem aqui já mentiu pro grupo sobre onde estava?",
-    "Qual o segredo mais inútil que você guarda?",
-    "Já fingiu não ver a mensagem de alguém nesse grupo?",
-    "Quem você menos confiaria com seu celular desbloqueado?",
-    "Qual hábito seu envergonharia sua família?",
-    "Já bisbilhotou o perfil de ex nessa semana?",
-    "Qual app você deletaria se alguém visse seu celular agora?",
-    "Já curtiu foto muito antiga de alguém sem querer?",
-    "Quem aqui tem mais de 3 chats arquivados?",
-    "Qual foi o último app que você abriu antes de dormir?",
-    "Você já bloqueou alguém e se arrependeu?",
-    "Qual notificação você mais ignora propositalmente?",
-    "Já mandou print de conversa sem a pessoa saber?",
-    "Quantas guias abertas você tem agora no celular?",
-    "Qual o último meme que você salvou e nunca mandou?",
-    "Já pesquisou o nome de alguém dessa sala no Google?",
-    "Qual app você usa no banheiro mas nunca admite?",
-    "Já fingiu bateria baixa pra sair de uma conversa?",
-    "Você tem alguém salvo no celular com nome falso?",
-    "Qual foto no seu rolo você deletaria agora se pudesse?",
-  ]
-};
-
-const ALL_DECKS = [DECK_PROIBIDAO, DECK_LOREM];
+const ALL_DECKS = [DECK_PROIBIDAO];
 
 // ============ TOKENS ============
 const C = {
@@ -340,168 +304,23 @@ function Modal({ children, onClose }) {
   );
 }
 
-// ============ TELA: SELEÇÃO DE BARALHOS ============
-function DeckSelect({ onNext, onTutorial }) {
-  const [selected, setSelected] = useState(['proibidao']);
-  const [buyDeck, setBuyDeck] = useState(null);
-  const { isPremium } = useAuth();
-
-  const hasExt = (deck) => deck.id === 'proibidao' ? isPremium : false;
-  const isFree = (deck) => deck.id === 'proibidao';
-
-  const toggle = (id) => {
-    const deck = ALL_DECKS.find(d => d.id === id);
-    if (!isFree(deck) && !hasExt(deck)) { setBuyDeck(deck); return; }
-    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-
-  const selDecks = ALL_DECKS.filter(d => selected.includes(d.id));
-  const anyExt = selDecks.some(d => hasExt(d));
-  const n = selDecks.length;
-
-  let ctaLabel, ctaBg, ctaColor;
-  if (n === 0) {
-    ctaLabel = 'ESCOLHA UM BARALHO'; ctaBg = '#1a1a1a'; ctaColor = '#444';
-  } else if (n === 1) {
-    ctaLabel = anyExt ? `JOGAR ${selDecks[0].name.toUpperCase()} →` : 'JOGAR VERSÃO GRÁTIS →';
-    ctaBg = selDecks[0].accentColor; ctaColor = '#000';
-  } else {
-    ctaLabel = anyExt ? `JOGAR COM ${n} BARALHOS →` : `JOGAR VERSÃO GRÁTIS (${n}) →`;
-    ctaBg = `linear-gradient(90deg, ${selDecks[0].accentColor} 0%, ${selDecks[selDecks.length - 1].accentColor} 100%)`;
-    ctaColor = '#000';
-  }
-
-  return (
-    <AppShell
-      cta={
-        <button onClick={() => onNext(selected)} disabled={n === 0} style={{
-          width: '100%', padding: '1.05rem', background: ctaBg, border: 'none',
-          borderRadius: `${R - 4}px`, color: ctaColor,
-          fontFamily: TITLE, fontWeight: 900, fontSize: '0.95rem',
-          letterSpacing: '-0.01em', cursor: n === 0 ? 'not-allowed' : 'pointer',
-        }}>
-          {ctaLabel}
-        </button>
-      }
-    >
-      <div style={{ paddingTop: '0.5rem', paddingBottom: '0.5rem', textAlign: 'center' }}>
-        <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: 'clamp(1.6rem, 6vw, 2.2rem)', letterSpacing: '-0.03em', color: C.ink, lineHeight: 0.95, marginBottom: '0.3rem' }}>
-          EU NÃO VOU<br />ME EXPOR
-        </div>
-        <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: C.inkMuted, letterSpacing: '0.04em', marginBottom: '0.5rem' }}>
-          mas eu não vou me expor
-        </div>
-        <button onClick={onTutorial} style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: '100px', padding: '0.25rem 0.9rem', cursor: 'pointer', fontFamily: BODY, fontSize: '0.65rem', color: C.inkMuted, fontWeight: 600, letterSpacing: '0.1em' }}>
-          como jogar?
-        </button>
-      </div>
-
-      <div style={{ fontFamily: BODY, fontSize: '0.62rem', color: C.inkMuted, fontWeight: 700, letterSpacing: '0.15em', margin: '0.8rem 0' }}>
-        ESCOLHA OS BARALHOS
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.6rem', marginBottom: '0.8rem' }}>
-        {ALL_DECKS.map(deck => {
-          const isSelected = selected.includes(deck.id);
-          const ext = hasExt(deck);
-          const free = isFree(deck);
-          const unlocked = free || ext;
-          const accent = deck.accentColor;
-          const cardBg = isSelected ? (accent === C.green ? '#0f1a08' : '#0d0e1f') : '#0c0c0c';
-
-          return (
-            <div key={deck.id} onClick={() => toggle(deck.id)} style={{
-              height: '180px', background: cardBg,
-              border: `2px solid ${isSelected ? accent : C.border}`,
-              borderRadius: `${R - 4}px`, padding: '0.75rem',
-              cursor: 'pointer', opacity: unlocked ? 1 : 0.6,
-              transition: 'border-color 0.2s, background 0.2s, opacity 0.2s',
-              display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-            }}>
-              {/* Topo */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <span style={{ fontSize: '1.6rem', lineHeight: 1 }}>{deck.emoji}</span>
-                {unlocked ? (
-                  <div style={{
-                    width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
-                    background: isSelected ? accent : 'transparent',
-                    border: `2px solid ${isSelected ? accent : C.border}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.2s'
-                  }}>
-                    {isSelected && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                  </div>
-                ) : (
-                  <span style={{ fontSize: '0.9rem', lineHeight: 1 }}>🔒</span>
-                )}
-              </div>
-
-              {/* Meio: nome + descrição */}
-              <div>
-                <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '0.82rem', color: C.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: '0.25rem' }}>
-                  {deck.name}
-                </div>
-                <div style={{ fontFamily: BODY, fontSize: '0.6rem', color: '#666', lineHeight: 1.35 }}>
-                  {deck.description}
-                </div>
-              </div>
-
-              {/* Rodapé: barra + ação */}
-              <div onClick={e => e.stopPropagation()}>
-                <div style={{ height: '2px', background: '#1a1a1a', borderRadius: '1px', overflow: 'hidden', marginBottom: '0.4rem' }}>
-                  <div style={{ width: ext ? '100%' : `${(deck.freeCount / deck.totalCount) * 100}%`, height: '100%', background: unlocked ? accent : '#333', borderRadius: '1px' }} />
-                </div>
-                {ext ? (
-                  <div style={{ fontFamily: BODY, fontSize: '0.6rem', fontWeight: 700, color: accent }}>✓ completo</div>
-                ) : free ? (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontFamily: BODY, fontSize: '0.6rem', color: C.green, fontWeight: 700 }}>{deck.freeCount} grátis</span>
-                    <button onClick={() => setBuyDeck(deck)} style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', fontFamily: BODY, fontSize: '0.6rem', fontWeight: 700, color: accent, textDecoration: 'underline' }}>
-                      COMPRAR
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '0.7rem', color: '#666' }}>{deck.price}</span>
-                    <button onClick={() => setBuyDeck(deck)} style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', fontFamily: BODY, fontSize: '0.6rem', fontWeight: 700, color: accent, textDecoration: 'underline' }}>
-                      DETALHES
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div style={{ fontFamily: BODY, fontSize: '0.62rem', color: C.inkMuted, textAlign: 'center', marginBottom: '0.5rem' }}>
-        toque para selecionar · pode misturar vários
-      </div>
-
-      {buyDeck && <DeckBuySheet deck={buyDeck} onClose={() => setBuyDeck(null)} />}
-    </AppShell>
-  );
-}
-
-// ============ BOTTOM SHEET DE COMPRA POR BARALHO (com Mercado Pago) ============
-function DeckBuySheet({ deck, onClose }) {
+// ============ TELA 1: SETUP (baralho + jogadores) ============
+function SetupCount({ onNext, onTutorial }) {
+  const [count, setCount] = useState(4);
+  const [selectedDeck, setSelectedDeck] = useState(DECK_PROIBIDAO);
+  const [showBuySheet, setShowBuySheet] = useState(false);
   const [couponInput, setCouponInput] = useState('');
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState(false);
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [loadingCoupon, setLoadingCoupon] = useState(false);
   const [loadingBuy, setLoadingBuy] = useState(false);
-  const { user, signInWithGoogle, redeemCoupon: redeemCouponFirebase } = useAuth();
 
-  const accent = deck.accentColor;
-  const premiumCount = deck.totalCount - deck.freeCount;
-  const sampleFree = deck.cards.slice(0, 1);
-  const samplePremium = deck.cards.slice(deck.freeCount, deck.freeCount + 2);
-  const samples = [...sampleFree, ...samplePremium];
+  const { user, isPremium, signInWithGoogle, redeemCoupon: redeemCouponFirebase } = useAuth();
 
   const handleLogin = async () => {
     setLoadingLogin(true);
-    try { await signInWithGoogle(); } catch (e) {} finally { setLoadingLogin(false); }
+    try { await signInWithGoogle(); } catch (e) { /* usuário fechou popup */ } finally { setLoadingLogin(false); }
   };
 
   const handleBuy = async () => {
@@ -511,7 +330,7 @@ function DeckBuySheet({ deck, onClose }) {
       const res = await fetch('/api/create-preference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid: user.uid, deckId: deck.id }),
+        body: JSON.stringify({ uid: user.uid }),
       });
       const data = await res.json();
       if (data.init_point) {
@@ -527,156 +346,345 @@ function DeckBuySheet({ deck, onClose }) {
   };
 
   const handleCoupon = async () => {
-    if (!user) { setCouponError('Faça login primeiro.'); return; }
+    if (!user) { setCouponError('Faça login primeiro para usar o cupom.'); return; }
     setLoadingCoupon(true);
     try {
-      await redeemCouponFirebase(couponInput.trim(), deck.id);
-      setCouponSuccess(true); setCouponError('');
-      setTimeout(() => onClose(), 1400);
-    } catch (e) { setCouponError(e.message); } finally { setLoadingCoupon(false); }
+      await redeemCouponFirebase(couponInput.trim(), 'proibidao');
+      setCouponSuccess(true);
+      setCouponError('');
+      setTimeout(() => setShowBuySheet(false), 1200);
+    } catch (e) {
+      setCouponError(e.message);
+    } finally {
+      setLoadingCoupon(false);
+    }
   };
 
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: '#0c0c0c', borderRadius: `${R}px ${R}px 0 0`, border: `1.5px solid ${C.border}`, borderBottom: 'none', padding: '1.2rem 1.3rem 1.8rem', width: '100%', maxWidth: '480px', maxHeight: '88vh', overflowY: 'auto' }}>
-        <div style={{ width: '2rem', height: '3px', background: '#333', borderRadius: '2px', margin: '0 auto 1.2rem' }} />
+  const deck = selectedDeck;
+  const premiumCount = deck.totalCount - deck.freeCount;
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
-          <span style={{ fontSize: '1.8rem', lineHeight: 1 }}>{deck.emoji}</span>
-          <div>
-            <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1.2rem', color: C.ink, letterSpacing: '-0.02em', lineHeight: 1 }}>{deck.name}</div>
-            <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: C.inkMuted, marginTop: '0.15rem' }}>{deck.description}</div>
-          </div>
-        </div>
-
-        {/* Preço */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', margin: '0.9rem 0 0.8rem' }}>
-          <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '2rem', color: accent, letterSpacing: '-0.03em', lineHeight: 1 }}>{deck.price}</div>
-          <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.inkMuted }}>pagamento único · {deck.totalCount} cartas</div>
-        </div>
-
-        {/* Exemplos — 1 card compacto */}
-        <div style={{ fontFamily: BODY, fontSize: '0.6rem', color: C.inkMuted, fontWeight: 700, letterSpacing: '0.12em', marginBottom: '0.5rem' }}>EXEMPLOS DO BARALHO</div>
-        <div style={{ background: '#111', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '0.6rem 0.8rem', marginBottom: '1rem' }}>
-          {samples.map((q, i) => {
-            const isPremiumQ = i > 0;
-            const text = typeof q === 'object' ? q.text : q;
-            return (
-              <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', paddingTop: i > 0 ? '0.45rem' : 0, marginTop: i > 0 ? '0.45rem' : 0, borderTop: i > 0 ? `1px solid ${C.border}` : 'none' }}>
-                <span style={{ fontSize: '0.65rem', flexShrink: 0 }}>{isPremiumQ ? '🔥' : '🆓'}</span>
-                <span style={{ fontFamily: BODY, fontSize: '0.75rem', color: isPremiumQ ? C.inkMuted : C.ink, lineHeight: 1.3, flex: 1 }}>{text}</span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Resumo */}
-        <div style={{ background: '#111', border: `1px solid ${C.border}`, borderRadius: `${R - 6}px`, padding: '0.75rem 1rem', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-            <span style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkSoft }}>{deck.freeCount} cartas grátis</span>
-            <span style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.green, fontWeight: 700 }}>incluso</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
-            <span style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkSoft }}>{premiumCount} cartas premium</span>
-            <span style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.ink, fontWeight: 700 }}>desbloqueadas</span>
-          </div>
-          <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: BODY, fontSize: '0.8rem', color: C.ink, fontWeight: 700 }}>Total</span>
-            <span style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1.2rem', color: accent, letterSpacing: '-0.02em' }}>{deck.price}</span>
-          </div>
-        </div>
-
-        {/* Botão Comprar — Mercado Pago real */}
-        <button onClick={handleBuy} disabled={loadingBuy} style={{ width: '100%', background: accent, border: 'none', borderRadius: `${R - 6}px`, padding: '1rem', cursor: loadingBuy ? 'not-allowed' : 'pointer', marginBottom: '0.75rem', opacity: loadingBuy ? 0.7 : 1 }}>
-          <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1rem', color: '#000' }}>
-            {loadingBuy ? 'Redirecionando...' : `Comprar agora · ${deck.price}`}
-          </div>
-          <div style={{ fontFamily: BODY, fontSize: '0.65rem', color: 'rgba(0,0,0,0.5)', marginTop: '0.1rem' }}>pix · cartão · Mercado Pago</div>
-        </button>
-
-        {/* Login Google */}
-        {!user ? (
-          <button onClick={handleLogin} disabled={loadingLogin} style={{ width: '100%', background: '#fff', border: 'none', borderRadius: `${R - 6}px`, padding: '0.8rem', cursor: 'pointer', marginBottom: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', opacity: loadingLogin ? 0.7 : 1 }}>
-            <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.1l-6.2-5.2C29.3 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.4 4.3-4.4 5.7l6.2 5.2C36.9 40.1 44 35 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
-            <span style={{ fontFamily: BODY, fontWeight: 700, fontSize: '0.85rem', color: '#222' }}>{loadingLogin ? 'Entrando...' : 'Entrar com Google para usar cupom'}</span>
-          </button>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.7rem', padding: '0.5rem 0.7rem', background: '#111', borderRadius: '10px', border: `1px solid ${C.border}` }}>
-            <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: '#000', fontWeight: 700, flexShrink: 0 }}>
-              {user.displayName?.[0] || user.email?.[0] || '?'}
-            </div>
-            <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.inkMuted, overflow: 'hidden' }}>
-              <div style={{ color: C.ink, fontWeight: 600, fontSize: '0.72rem' }}>{user.displayName || 'Logado'}</div>
-              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
-            </div>
-          </div>
-        )}
-
-        {/* Cupom */}
-        {user && (
-          <div style={{ marginBottom: '0.6rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input value={couponInput} onChange={e => { setCouponInput(e.target.value); setCouponError(''); }} placeholder="Tem um cupom?" style={{ flex: 1, background: '#111', border: `1px solid ${C.border}`, borderRadius: '10px', padding: '0.6rem 0.9rem', color: C.ink, fontFamily: BODY, fontSize: '0.82rem', outline: 'none' }} />
-              <button onClick={handleCoupon} disabled={loadingCoupon} style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: '10px', padding: '0.6rem 1rem', color: C.ink, fontFamily: BODY, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: loadingCoupon ? 0.6 : 1 }}>
-                {loadingCoupon ? '...' : 'Aplicar'}
-              </button>
-            </div>
-            {couponError && <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: C.red, marginTop: '0.35rem' }}>{couponError}</div>}
-            {couponSuccess && <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: accent, marginTop: '0.35rem', fontWeight: 600 }}>✓ Cupom aplicado! Baralho desbloqueado.</div>}
-          </div>
-        )}
-
-        <div style={{ textAlign: 'center', fontFamily: BODY, fontSize: '0.6rem', color: C.inkMuted }}>
-          compra única · disponível em todos seus dispositivos
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============ TELA 1: SETUP (baralho + jogadores) ============
-function SetupCount({ onNext, onTutorial, onBack }) {
-  const [count, setCount] = useState(4);
-
-  const cta = (
-    <Btn onClick={() => onNext(count)} color={C.bg} bg={C.ink} border={C.ink}>
+  const cta = showBuySheet ? null : (
+    <Btn onClick={() => onNext(count, selectedDeck)} color={C.bg} bg={C.ink} border={C.ink}>
       Continuar
     </Btn>
   );
 
   return (
-    <AppShell onBack={onBack} label="JOGADORES" cta={cta}>
-      <div style={{ fontFamily: BODY, fontSize: '0.62rem', color: C.inkMuted, fontWeight: 700, letterSpacing: '0.15em', marginBottom: '0.7rem', textAlign: 'center' }}>
-        QUANTOS JOGADORES?
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2rem' }}>
-        <button onClick={() => setCount(Math.max(3, count - 1))} style={{
-          width: '2.5rem', height: '2.5rem', borderRadius: '50%',
-          background: 'transparent', border: `1.5px solid ${C.border}`,
-          color: C.inkSoft, fontSize: '1.3rem', cursor: 'pointer', lineHeight: 1
-        }}>−</button>
+    <AppShell cta={cta}>
+      {/* Logo */}
+      <div style={{ paddingTop: '0.5rem', paddingBottom: '0.8rem', textAlign: 'center' }}>
         <div style={{
-          fontFamily: TITLE, fontWeight: 900,
-          fontSize: 'clamp(3rem, 10vw, 4.5rem)',
-          color: C.ink, lineHeight: 1, minWidth: '3rem',
-          textAlign: 'center', letterSpacing: '-0.04em'
+          fontFamily: TITLE, fontWeight: 900, fontSize: 'clamp(1.8rem, 6vw, 2.4rem)',
+          letterSpacing: '-0.03em', color: C.ink, lineHeight: 0.95, marginBottom: '0.4rem'
         }}>
-          {count}
+          EU NÃO VOU<br />ME EXPOR
         </div>
-        <button onClick={() => setCount(Math.min(20, count + 1))} style={{
-          width: '2.5rem', height: '2.5rem', borderRadius: '50%',
-          background: 'transparent', border: `1.5px solid ${C.border}`,
-          color: C.inkSoft, fontSize: '1.3rem', cursor: 'pointer', lineHeight: 1
-        }}>+</button>
+        <Tagline />
+        <button
+          onClick={onTutorial}
+          style={{
+            marginTop: '0.6rem', background: 'transparent',
+            border: `1px solid ${C.border}`, borderRadius: '100px',
+            padding: '0.25rem 0.9rem', cursor: 'pointer',
+            fontFamily: BODY, fontSize: '0.65rem', color: C.inkMuted,
+            fontWeight: 600, letterSpacing: '0.1em'
+          }}
+        >
+          como jogar?
+        </button>
       </div>
-      <div style={{ textAlign: 'center', fontFamily: BODY, fontSize: '0.62rem', color: C.inkMuted, marginTop: '0.6rem' }}>
-        mín. 3 · máx. 20
+
+      {/* Seção baralho */}
+      <div style={{
+        background: C.card, border: `1.5px solid ${C.border}`,
+        borderRadius: `${R}px`, padding: '0.9rem 1rem', marginBottom: '0.7rem', flexShrink: 0
+      }}>
+        <div style={{
+          fontFamily: BODY, fontSize: '0.65rem', color: C.inkMuted,
+          fontWeight: 700, letterSpacing: '0.15em', marginBottom: '0.8rem'
+        }}>
+          BARALHO
+        </div>
+
+        {/* Card do baralho selecionado */}
+        <div style={{
+          background: '#111', border: `2px solid ${C.green}`,
+          borderRadius: `${R - 6}px`, padding: '0.9rem 1rem'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.7rem' }}>
+            <div>
+              <div style={{
+                fontFamily: TITLE, fontWeight: 900, fontSize: '1rem',
+                color: C.ink, letterSpacing: '-0.02em'
+              }}>
+                {deck.name}
+              </div>
+              <div style={{ fontFamily: BODY, fontSize: '0.65rem', color: C.inkMuted, marginTop: '0.15rem' }}>
+                {isPremium
+                  ? `${deck.totalCount} cartas · baralho completo`
+                  : `${deck.freeCount} de ${deck.totalCount} cartas grátis`}
+              </div>
+            </div>
+            {isPremium ? (
+              <div style={{
+                background: `${C.green}22`, border: `1px solid ${C.green}55`,
+                borderRadius: '100px', padding: '0.2rem 0.6rem',
+                fontFamily: BODY, fontSize: '0.58rem', color: C.green, fontWeight: 700
+              }}>
+                COMPLETO
+              </div>
+            ) : (
+              <div style={{
+                background: `${C.green}22`, border: `1px solid ${C.green}55`,
+                borderRadius: '100px', padding: '0.2rem 0.6rem',
+                fontFamily: BODY, fontSize: '0.58rem', color: C.green, fontWeight: 700
+              }}>
+                SELECIONADO
+              </div>
+            )}
+          </div>
+
+          {/* Badge desbloqueado OU botão de compra */}
+          {isPremium ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              background: `${C.green}12`, border: `1px solid ${C.green}33`,
+              borderRadius: '8px', padding: '0.5rem 0.7rem'
+            }}>
+              <div style={{
+                width: '16px', height: '16px', borderRadius: '50%',
+                background: `${C.green}33`, display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.65rem', color: C.green, flexShrink: 0
+              }}>✓</div>
+              <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.green, fontWeight: 600 }}>
+                Baralho completo desbloqueado
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowBuySheet(true)}
+              style={{
+                width: '100%', background: C.green, border: 'none',
+                borderRadius: '9px', padding: '0.7rem 1rem',
+                cursor: 'pointer', textAlign: 'center'
+              }}
+            >
+              <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '0.95rem', color: '#000', letterSpacing: '-0.01em' }}>
+                Baralho completo
+              </div>
+              <div style={{ fontFamily: BODY, fontSize: '0.65rem', color: '#1a3d00', marginTop: '0.1rem', fontWeight: 500 }}>
+                {deck.totalCount} cartas por {deck.price}
+              </div>
+            </button>
+          )}
+        </div>
+
+        {/* Em breve */}
+        <div style={{
+          background: '#111', border: `1.5px solid ${C.border}`,
+          borderRadius: `${R - 6}px`, padding: '0.6rem 0.9rem',
+          marginTop: '0.5rem', opacity: 0.4,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+        }}>
+          <div>
+            <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '0.85rem', color: C.ink }}>Mais baralhos</div>
+            <div style={{ fontFamily: BODY, fontSize: '0.6rem', color: C.inkMuted, marginTop: '0.1rem' }}>em breve</div>
+          </div>
+          <div style={{
+            background: '#1a1a1a', borderRadius: '100px', padding: '0.15rem 0.5rem',
+            fontFamily: BODY, fontSize: '0.55rem', color: C.inkMuted, fontWeight: 700
+          }}>
+            EM BREVE
+          </div>
+        </div>
       </div>
+
+      {/* Seção jogadores */}
+      <div style={{
+        background: C.card, border: `1.5px solid ${C.border}`,
+        borderRadius: `${R}px`, padding: '0.9rem 1rem', marginBottom: '0.7rem', flexShrink: 0
+      }}>
+        <div style={{
+          fontFamily: BODY, fontSize: '0.62rem', color: C.inkMuted,
+          fontWeight: 700, letterSpacing: '0.15em', marginBottom: '0.7rem', textAlign: 'center'
+        }}>
+          QUANTOS JOGADORES?
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2rem' }}>
+          <button onClick={() => setCount(Math.max(3, count - 1))} style={{
+            width: '2.5rem', height: '2.5rem', borderRadius: '50%',
+            background: 'transparent', border: `1.5px solid ${C.border}`,
+            color: C.inkSoft, fontSize: '1.3rem', cursor: 'pointer', lineHeight: 1
+          }}>−</button>
+          <div style={{
+            fontFamily: TITLE, fontWeight: 900,
+            fontSize: 'clamp(3rem, 10vw, 4.5rem)',
+            color: C.ink, lineHeight: 1, minWidth: '3rem',
+            textAlign: 'center', letterSpacing: '-0.04em'
+          }}>
+            {count}
+          </div>
+          <button onClick={() => setCount(Math.min(20, count + 1))} style={{
+            width: '2.5rem', height: '2.5rem', borderRadius: '50%',
+            background: 'transparent', border: `1.5px solid ${C.border}`,
+            color: C.inkSoft, fontSize: '1.3rem', cursor: 'pointer', lineHeight: 1
+          }}>+</button>
+        </div>
+        <div style={{
+          textAlign: 'center', fontFamily: BODY, fontSize: '0.62rem',
+          color: C.inkMuted, marginTop: '0.6rem'
+        }}>
+          mín. 3 · máx. 20
+        </div>
+      </div>
+
+      {/* Bottom sheet de compra */}
+      {showBuySheet && (
+        <div
+          onClick={() => { setShowBuySheet(false); setCouponError(''); setCouponInput(''); }}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+            zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center'
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#0c0c0c', borderRadius: `${R}px ${R}px 0 0`,
+              border: `1.5px solid ${C.border}`, borderBottom: 'none',
+              padding: '1.5rem', width: '100%', maxWidth: '480px'
+            }}
+          >
+            {/* handle */}
+            <div style={{ width: '2rem', height: '3px', background: '#333', borderRadius: '2px', margin: '0 auto 1.2rem' }} />
+
+            {isPremium ? (
+              /* ── Estado: já comprou ── */
+              <div style={{ textAlign: 'center', paddingBottom: '0.5rem' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>🎉</div>
+                <div style={{
+                  fontFamily: TITLE, fontWeight: 900, fontSize: '1.4rem',
+                  color: C.green, letterSpacing: '-0.02em', marginBottom: '0.4rem'
+                }}>
+                  Baralho liberado!
+                </div>
+                <div style={{ fontFamily: BODY, fontSize: '0.82rem', color: C.inkMuted, marginBottom: '1.5rem' }}>
+                  Você já tem acesso a todas as {deck.totalCount} cartas do {deck.name}.
+                </div>
+                <Btn
+                  onClick={() => setShowBuySheet(false)}
+                  color={C.bg} bg={C.green} border={C.green}
+                >
+                  Jogar agora
+                </Btn>
+              </div>
+            ) : (
+              /* ── Estado: ainda não comprou ── */
+              <>
+                <div style={{ textAlign: 'center', marginBottom: '1.2rem' }}>
+                  <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1.3rem', color: C.ink, letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
+                    {deck.name}
+                  </div>
+                  <div style={{ fontFamily: BODY, fontSize: '0.75rem', color: C.inkMuted }}>
+                    baralho completo · {deck.totalCount} cartas
+                  </div>
+                </div>
+
+                {/* Resumo */}
+                <div style={{ background: '#111', border: `1px solid ${C.border}`, borderRadius: `${R - 6}px`, padding: '0.9rem 1rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.inkSoft }}>{deck.freeCount} cartas grátis</div>
+                    <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.green, fontWeight: 700 }}>incluso</div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
+                    <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.inkSoft }}>{premiumCount} cartas premium</div>
+                    <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: C.ink, fontWeight: 700 }}>desbloqueadas</div>
+                  </div>
+                  <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: '0.7rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontFamily: BODY, fontSize: '0.85rem', color: C.ink, fontWeight: 700 }}>Total</div>
+                    <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1.3rem', color: C.green, letterSpacing: '-0.02em' }}>{deck.price}</div>
+                  </div>
+                </div>
+
+                {/* Botão comprar */}
+                <button
+                  onClick={handleBuy}
+                  disabled={loadingBuy}
+                  style={{ width: '100%', background: C.green, border: 'none', borderRadius: `${R - 6}px`, padding: '0.95rem', cursor: loadingBuy ? 'not-allowed' : 'pointer', marginBottom: '0.8rem', opacity: loadingBuy ? 0.7 : 1 }}
+                >
+                  <div style={{ fontFamily: TITLE, fontWeight: 900, fontSize: '1rem', color: '#000' }}>{loadingBuy ? 'Aguarde...' : `Comprar agora · ${deck.price}`}</div>
+                  <div style={{ fontFamily: BODY, fontSize: '0.68rem', color: '#1a3d00', marginTop: '0.1rem' }}>pix · cartão · pagamento seguro</div>
+                </button>
+
+                {/* Login Google */}
+                {!user ? (
+                  <button onClick={handleLogin} disabled={loadingLogin} style={{
+                    width: '100%', background: '#fff', border: 'none',
+                    borderRadius: `${R - 6}px`, padding: '0.85rem',
+                    cursor: loadingLogin ? 'not-allowed' : 'pointer',
+                    marginBottom: '0.7rem', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+                    opacity: loadingLogin ? 0.7 : 1
+                  }}>
+                    <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.1l-6.2-5.2C29.3 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.4 4.3-4.4 5.7l6.2 5.2C36.9 40.1 44 35 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+                    <span style={{ fontFamily: BODY, fontWeight: 700, fontSize: '0.9rem', color: '#222' }}>
+                      {loadingLogin ? 'Entrando...' : 'Entrar com Google para usar cupom'}
+                    </span>
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.7rem', padding: '0.5rem 0.7rem', background: '#111', borderRadius: '10px', border: `1px solid ${C.border}` }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: C.green, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#000', fontWeight: 700, flexShrink: 0 }}>
+                      {user.displayName?.[0] || user.email?.[0] || '?'}
+                    </div>
+                    <div style={{ fontFamily: BODY, fontSize: '0.72rem', color: C.inkMuted, overflow: 'hidden' }}>
+                      <div style={{ color: C.ink, fontWeight: 600, fontSize: '0.75rem' }}>{user.displayName || 'Logado'}</div>
+                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Cupom — só aparece se estiver logado */}
+                {user && (
+                  <div style={{ marginBottom: '0.8rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input
+                        value={couponInput}
+                        onChange={e => { setCouponInput(e.target.value); setCouponError(''); }}
+                        placeholder="Tem um cupom?"
+                        style={{
+                          flex: 1, background: '#111', border: `1px solid ${C.border}`,
+                          borderRadius: '10px', padding: '0.65rem 0.9rem',
+                          color: C.ink, fontFamily: BODY, fontSize: '16px',
+                          outline: 'none', letterSpacing: '0.02em'
+                        }}
+                      />
+                      <button onClick={handleCoupon} disabled={loadingCoupon} style={{
+                        background: 'transparent', border: `1px solid ${C.border}`,
+                        borderRadius: '10px', padding: '0.65rem 1rem',
+                        color: C.ink, fontFamily: BODY, fontSize: '0.8rem',
+                        fontWeight: 600, cursor: loadingCoupon ? 'not-allowed' : 'pointer',
+                        whiteSpace: 'nowrap', opacity: loadingCoupon ? 0.6 : 1
+                      }}>
+                        {loadingCoupon ? '...' : 'Aplicar'}
+                      </button>
+                    </div>
+                    {couponError && <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.red, marginTop: '0.4rem' }}>{couponError}</div>}
+                    {couponSuccess && <div style={{ fontFamily: BODY, fontSize: '0.7rem', color: C.green, marginTop: '0.4rem', fontWeight: 600 }}>Cupom aplicado! Baralho completo desbloqueado.</div>}
+                  </div>
+                )}
+
+                <div style={{ textAlign: 'center', fontFamily: BODY, fontSize: '0.65rem', color: C.inkMuted }}>
+                  compra única · disponível em todos seus dispositivos
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
-
 
 // ============ TELA 2: SETUP NAMES ============
 function SetupNames({ initialCount, onNext, onBack }) {
@@ -773,8 +781,7 @@ function SetupNames({ initialCount, onNext, onBack }) {
 }
 
 // ============ TELA 3: CARTA ============
-function CardReveal({ question, round, deckEmoji, deckAccent, totalDecks, onStart, onHome, onSkip, onExample }) {
-  const showTag = totalDecks > 1 && deckEmoji;
+function CardReveal({ question, round, onStart, onHome, onSkip, onExample }) {
   return (
     <AppShell
       onHome={onHome}
@@ -813,19 +820,6 @@ function CardReveal({ question, round, deckEmoji, deckAccent, totalDecks, onStar
             color: C.inkMuted, fontSize: '0.7rem'
           }}>✦</div>
         </div>
-        {showTag && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-              background: `${deckAccent}18`, border: `1px solid ${deckAccent}44`,
-              borderRadius: '100px', padding: '0.2rem 0.7rem',
-              fontFamily: BODY, fontSize: '0.6rem', fontWeight: 700, color: deckAccent,
-              letterSpacing: '0.06em'
-            }}>
-              {deckEmoji}
-            </div>
-          </div>
-        )}
         <div style={{
           fontFamily: TITLE, fontWeight: 900, fontSize: '2rem',
           color: C.ink, letterSpacing: '-0.03em', lineHeight: 1.1,
@@ -2019,15 +2013,14 @@ export default function App() {
   };
 
   const [stage, setStage] = useState(() => {
-    return localStorage.getItem('onboarding_done') === 'true' ? 'deckSelect' : 'onboarding';
+    return localStorage.getItem('onboarding_done') === 'true' ? 'setupCount' : 'onboarding';
   });
   const [prevStage, setPrevStage] = useState(null);
   const [playerCount, setPlayerCount] = useState(4);
   const [selectedDeck, setSelectedDeck] = useState(DECK_PROIBIDAO);
-  const [selectedDeckIds, setSelectedDeckIds] = useState(['proibidao']);
 
   const goExample = () => { setPrevStage(stage); setStage('example'); };
-  const closeExample = () => setStage(prevStage || 'deckSelect');
+  const closeExample = () => setStage(prevStage || 'setupCount');
   const [players, setPlayers] = useState([]);
   const [round, setRound] = useState(1);
   const [deck, setDeck] = useState([]);
@@ -2075,25 +2068,18 @@ export default function App() {
     setDeck(d.slice(1));
   };
 
-  const startGame = (names, deckIds) => {
+  const startGame = (names, deck, isPremium) => {
     setPlayers(names);
-    const allCards = [];
-    deckIds.forEach(deckId => {
-      const d = ALL_DECKS.find(x => x.id === deckId);
-      if (!d) return;
-      const hasExt = deckId === 'proibidao' ? isPremiumUnlocked : false;
-      const cards = hasExt ? d.cards : d.cards.slice(0, d.freeCount);
-      cards.forEach(text => allCards.push({ text, deckId, deckEmoji: d.emoji, deckAccent: d.accentColor }));
-    });
-    const shuffled = shuffle(allCards);
-    setCurrentCard(shuffled[0]); setDeck(shuffled.slice(1));
+    const cards = isPremium ? deck.cards : deck.cards.slice(0, deck.freeCount);
+    const d = shuffle(cards);
+    setCurrentCard(d[0]); setDeck(d.slice(1));
     setRound(1); setVotes([]); setCurrentPlayerIdx(0);
     setSkippedPlayers([]);
     setStage('card');
   };
 
   const goHome = () => {
-    setStage('deckSelect');
+    setStage('setupCount');
     setVotes([]);
     setSkippedPlayers([]);
     setPendingVote(null);
@@ -2167,36 +2153,25 @@ export default function App() {
     if (!ageConfirmed) return <AgeGate onConfirm={handleAgeConfirm} onDeny={handleAgeDeny} />;
     if (stage === 'onboarding') return <Onboarding onDone={() => {
       localStorage.setItem('onboarding_done', 'true');
-      setStage('deckSelect');
+      setStage('setupCount');
     }} />;
     if (stage === 'example') return <ExampleScreen onClose={closeExample} />;
-    if (stage === 'deckSelect') return (
-      <DeckSelect
-        onNext={(deckIds) => { setSelectedDeckIds(deckIds); setStage('setupCount'); }}
-        onTutorial={() => { setPrevStage('deckSelect'); setStage('onboarding'); }}
-      />
-    );
     if (stage === 'setupCount') return (
       <SetupCount
-        onNext={(c) => { setPlayerCount(c); setStage('setupNames'); }}
-        onBack={() => setStage('deckSelect')}
+        onNext={(c, deck) => { setPlayerCount(c); setSelectedDeck(deck); setStage('setupNames'); }}
         onTutorial={() => { setPrevStage('setupCount'); setStage('onboarding'); }}
       />
     );
     if (stage === 'setupNames') return (
       <SetupNames
         initialCount={playerCount}
-        onNext={(names) => startGame(names, selectedDeckIds)}
+        onNext={(names) => startGame(names, selectedDeck, isPremiumUnlocked)}
         onBack={() => setStage('setupCount')}
       />
     );
     if (stage === 'card') return (
       <CardReveal
-        question={typeof currentCard === 'object' ? currentCard.text : currentCard}
-        deckEmoji={typeof currentCard === 'object' ? currentCard.deckEmoji : null}
-        deckAccent={typeof currentCard === 'object' ? currentCard.deckAccent : null}
-        totalDecks={selectedDeckIds.length}
-        round={round}
+        question={currentCard} round={round}
         onHome={goHome}
         onStart={() => setStage('voteChoice')}
         onSkip={() => { if (deck.length === 0) { setStage('deckEmpty'); } else { drawCard(deck); } }}
@@ -2205,7 +2180,7 @@ export default function App() {
     );
     if (stage === 'voteChoice') return (
       <PlayerVoteChoice
-        question={typeof currentCard === 'object' ? currentCard.text : currentCard} round={round}
+        question={currentCard} round={round}
         playerName={players[currentPlayerIdx]}
         playerIndex={activeOrderIdx} totalPlayers={activeTotalForRound}
         activePlayers={activeTotalForRound}
@@ -2225,26 +2200,19 @@ export default function App() {
     );
     if (stage === 'score') return (
       <Scoreboard
-        question={typeof currentCard === 'object' ? currentCard.text : currentCard} round={round}
+        question={currentCard} round={round}
         players={players} votes={votes} skipped={skippedPlayers}
         onNext={nextRound} onHome={goHome} onExample={goExample}
       />
     );
     if (stage === 'deckEmpty') return (
       <DeckEmpty
-        deck={selectedDeckIds.map(id => ALL_DECKS.find(d => d.id === id)).filter(Boolean)[0] || DECK_PROIBIDAO}
+        deck={selectedDeck}
         isPremium={isPremiumUnlocked}
         onBuy={() => {
-          const allCards = [];
-          selectedDeckIds.forEach(deckId => {
-            const d = ALL_DECKS.find(x => x.id === deckId);
-            if (!d) return;
-            const hasExt = deckId === 'proibidao' ? isPremiumUnlocked : false;
-            const cards = hasExt ? d.cards : d.cards.slice(0, d.freeCount);
-            cards.forEach(text => allCards.push({ text, deckId, deckEmoji: d.emoji, deckAccent: d.accentColor }));
-          });
-          const shuffled = shuffle(allCards);
-          setCurrentCard(shuffled[0]); setDeck(shuffled.slice(1));
+          const cards = selectedDeck.cards;
+          const d = shuffle(cards);
+          setCurrentCard(d[0]); setDeck(d.slice(1));
           setRound(round + 1); setVotes([]);
           setCurrentPlayerIdx(players.findIndex((_, i) => !skippedPlayers.includes(i)));
           setStage('card');
